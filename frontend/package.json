@@ -10,13 +10,19 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.10.2",
+    "@radix-ui/themes": "^3.2.0",
     "bootstrap": "^5.3.3",
+    "class-variance-authority": "^0.7.1",
+    "cmdk": "^1.0.4",
     "lightweight-charts": "^4.2.3",
     "lucide-react": "^0.474.0",
     "next": "15.1.6",
+    "radix-ui": "^1.1.2",
     "react": "^19.0.0",
     "react-bootstrap": "^2.10.8",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-theme": "^0.1.4",
+    "tailwind-merge": "^2.6.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
