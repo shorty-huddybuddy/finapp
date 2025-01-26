@@ -4,28 +4,32 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strings"
-
+	"backend/routes"
 	"github.com/clerk/clerk-sdk-go/v2"
-	"github.com/clerk/clerk-sdk-go/v2/jwt"
-	"github.com/clerk/clerk-sdk-go/v2/user"
+	"github.com/joho/godotenv"
 	"github.com/rs/cors"
 )
 
 func main() {
+	// Load environment variables from .env file
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println("Error loading .env file")
+	}
+
 	// Set your Clerk Secret Key
 	clerk.SetKey(os.Getenv("CLERK_SECRET_KEY"))
+
+	// Print Clerk Secret Key for debugging
+	fmt.Println("Clerk Secret Key:", os.Getenv("CLERK_SECRET_KEY"))
+	fmt.Println("GEMINI API KEY", os.Getenv("GEMINI_API_KEY"))
 
 	// Create a new HTTP server multiplexer
 	mux := http.NewServeMux()
 
-	// Public route (no authentication required)
-	mux.HandleFunc("/", publicRoute)
+	// Register routes
+	routes.RegisterRoutes(mux)
 
-	// Protected route (requires authentication)
-	mux.HandleFunc("/protected", protectedRoute)
-
-	// Set up CORS middleware with the frontend domain (e.g., http://localhost:3000)
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins: []string{"http://localhost:3000"},         // Frontend origin
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},  // Allowed HTTP methods
@@ -37,36 +41,4 @@ func main() {
 	if err := http.ListenAndServe(":8080", corsHandler.Handler(mux)); err != nil {
 		panic("Failed to start server: " + err.Error())
 	}
-}
-
-// Public route handler
-func publicRoute(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(`{"access": "public"}`))
-}
-
-// Protected route handler
-func protectedRoute(w http.ResponseWriter, r *http.Request) {
-	// Get the session token from the Authorization header
-	sessionToken := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
-
-	// Verify the session token
-	claims, err := jwt.Verify(r.Context(), &jwt.VerifyParams{
-		Token: sessionToken,
-	})
-	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"access": "unauthorized"}`))
-		return
-	}
-
-	// Fetch user details using the session claims
-	usr, err := user.Get(r.Context(), claims.Subject)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error": "Failed to fetch user details"}`))
-		return
-	}
-
-	// Respond with user details
-	fmt.Fprintf(w, `{"user_id": "%s", "user_banned": "%t"}`, usr.ID, usr.Banned)
 }

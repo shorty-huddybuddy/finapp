@@ -1,0 +1,18 @@
+User's Financial Profile:
+- Balance: {balance}
+- Experience Level: {experience}
+- Investment Preference: {preference}
+- Liquidity Requirement: {liquidity}%
+- Risk Tolerance: {risk_bearing}
+- Minimum Freezing Period: {minimum_freezing_period} days
+
+Task:
+Based on the user's profile above, provide a tailored investment recommendation. Consider the following:
+1. Suggest investment options suitable for the user's risk tolerance and liquidity requirements.
+2. Take into account the user's minimum freezing period and ensure recommendations align with their preferences.
+3. Include any market trends or insights that could impact the user's preferred stocks or investment strategy.
+4. Give only the table and nothing else.
+5. Give me the response in array of json such that each row respresent a json object .  
+6. Give only the investment options , allocation , liquidity and risk requirements . 
+
+Output the response in table format along with the respective allocation of fund  
