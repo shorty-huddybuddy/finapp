@@ -11,6 +11,7 @@ import TechnicalAnalysis from "@/components/TechnicalAnalysis"
 import TopCoins from "@/components/TopCoins"
 import SearchResults from "@/components/SearchResults"
 import { getCryptoData } from "@/services/api"
+import crypto from "crypto"
 
 export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -18,6 +19,12 @@ export default function Dashboard() {
   const [filteredData, setFilteredData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [selectedCoin, setSelectedCoin] = useState("BTCUSD")
+
+  // Example user authentication (if needed)
+  const current_user = { id: "user-uuid-here" } // Replace with actual user ID
+  const secret = "5b0fqtqg35dpelgtesk24xny70aqds0j" // Your verification secret key
+  const userId = current_user.id
+  const hash = crypto.createHmac("sha256", secret).update(userId).digest("hex")
 
   useEffect(() => {
     const fetchData = async () => {
@@ -34,6 +41,31 @@ export default function Dashboard() {
     }
 
     fetchData()
+  }, [])
+
+  useEffect(() => {
+    // Load the chatbot script
+    const onLoad = () => {
+      const script = document.createElement("script")
+      script.src = "https://www.chatbase.co/embed.min.js"
+      script.id = "Q2rjth501r8z8EHph4FsZ"
+      script.setAttribute("data-domain", "www.chatbase.co")
+      document.body.appendChild(script)
+    }
+
+    if (document.readyState === "complete") {
+      onLoad()
+    } else {
+      window.addEventListener("load", onLoad)
+    }
+
+    // Cleanup function to remove the script when the component unmounts
+    return () => {
+      const script = document.getElementById("Q2rjth501r8z8EHph4FsZ")
+      if (script) {
+        document.body.removeChild(script)
+      }
+    }
   }, [])
 
   const handleSearch = () => {
@@ -114,4 +146,3 @@ export default function Dashboard() {
     </div>
   )
 }
-

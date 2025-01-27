@@ -1,14 +1,39 @@
 package main
 
 import (
+	"backend/routes"
+	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
-	"backend/routes"
+
+	firebase "firebase.google.com/go/v4"
+	"firebase.google.com/go/v4/db"
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/joho/godotenv"
 	"github.com/rs/cors"
+	"google.golang.org/api/option"
 )
+
+// Global variable for Firebase Database client
+var FirebaseDB *db.Client
+
+// Initialize Firebase
+func initFirebase() {
+	// Use your Firebase Admin SDK JSON file
+	opt := option.WithCredentialsFile("api_key.json")
+	app, err := firebase.NewApp(context.Background(), nil, opt)
+	if err != nil {
+		log.Fatalf("Error initializing Firebase app: %v", err)
+	}
+
+	// Initialize Firebase Realtime Database
+	FirebaseDB, err = app.DatabaseWithURL(context.Background(), os.Getenv("FIREBASE_DB_URL"))
+	if err != nil {
+		log.Fatalf("Error initializing Firebase Realtime Database: %v", err)
+	}
+}
 
 func main() {
 	// Load environment variables from .env file
@@ -35,6 +60,8 @@ func main() {
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},  // Allowed HTTP methods
 		AllowedHeaders: []string{"Content-Type", "Authorization"}, // Allowed headers
 	})
+
+	initFirebase()
 
 	// Start the server with CORS middleware
 	fmt.Println("Server is running on http://localhost:8080")

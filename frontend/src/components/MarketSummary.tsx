@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { ArrowDown, ArrowUp } from "lucide-react"
 
 interface MarketSummaryProps {
-  data: any[]
+  data: any[]| null
 }
 
 export default function MarketSummary({ data }: MarketSummaryProps) {
