@@ -11,17 +11,48 @@ import TechnicalAnalysis from "@/components/TechnicalAnalysis"
 import TopCoins from "@/components/TopCoins"
 import SearchResults from "@/components/SearchResults"
 import { getCryptoData } from "@/services/api"
+import crypto from "crypto" // Import crypto for user verification
+
+interface Coin {
+  name: string
+  symbol: string
+  // Add other properties as needed
+}
 
 export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("")
-  const [marketData, setMarketData] = useState<any>(null)
-  const [filteredData, setFilteredData] = useState<any>(null)
+  const [marketData, setMarketData] = useState<Coin[] | null>(null)
+  const [filteredData, setFilteredData] = useState<Coin[] | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedCoin, setSelectedCoin] = useState("BTCUSD")
 
+  // Load chatbot script
+  useEffect(() => {
+    const loadChatbot = () => {
+      const script = document.createElement("script")
+      script.src = "https://www.chatbase.co/embed.min.js"
+      script.id = "Q2rjth501r8z8EHph4FsZ"
+      script.setAttribute("data-domain", "www.chatbase.co")
+      script.defer = true
+      document.body.appendChild(script)
+    }
+
+    if (document.readyState === "complete") {
+      loadChatbot()
+    } else {
+      window.addEventListener("load", loadChatbot)
+    }
+
+    // Cleanup
+    return () => {
+      window.removeEventListener("load", loadChatbot)
+    }
+  }, [])
+
+  // Fetch market data
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true)
+      //setLoading(true)
       try {
         const data = await getCryptoData()
         setMarketData(data)
@@ -32,31 +63,54 @@ export default function Dashboard() {
         setLoading(false)
       }
     }
-
     fetchData()
+    const timer = setInterval(fetchData, 45000) // Refresh data every minute
+    return () => clearInterval(timer)
+    
   }, [])
 
+  // Handle search
   const handleSearch = () => {
     if (!searchQuery.trim()) {
       setFilteredData(null)
       return
     }
-    const filtered = marketData.filter(
-      (coin: any) =>
+    const filtered = marketData?.filter(
+      (coin) =>
         coin.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         coin.symbol.toLowerCase().includes(searchQuery.toLowerCase()),
     )
-    setFilteredData(filtered)
+    setFilteredData(filtered || null)
   }
 
+  // Handle coin selection
   const handleCoinSelect = (symbol: string) => {
     setSelectedCoin(`${symbol}USD`)
     setFilteredData(null)
     setSearchQuery("")
   }
 
+  // User verification (optional)
+  const verifyUser = () => {
+    const secret = "5b0fqtqg35dpelgtesk24xny70aqds0j" // Your verification secret key
+    const userId = "user-id" // Replace with actual user ID (e.g., from authentication)
+    const hash = crypto.createHmac("sha256", secret).update(userId).digest("hex")
+    return hash
+  }
+
+  if (loading) {
+    return <div>Loading...</div>
+  }
+
   return (
     <div className="min-h-screen bg-white text-gray-800 p-4">
+      {/* Chatbot container */}
+      <div
+        id="chatbot-container"
+        className="fixed bottom-4 right-4 z-50"
+        style={{ width: "350px", height: "500px" }}
+      ></div>
+
       <div className="max-w-[1800px] mx-auto space-y-4">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-800">Crypto Dashboard</h1>
@@ -68,14 +122,16 @@ export default function Dashboard() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-[200px] bg-white border-gray-300 text-gray-800"
             />
-            <Button onClick={handleSearch}>Search</Button>
+            <Button onClick={handleSearch} aria-label="Search">
+              Search
+            </Button>
           </div>
         </div>
 
         {filteredData && <SearchResults data={filteredData} onSelectCoin={handleCoinSelect} />}
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          <MarketSummary data={marketData} />
+        <MarketSummary data={marketData} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
@@ -114,4 +170,3 @@ export default function Dashboard() {
     </div>
   )
 }
-

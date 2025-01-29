@@ -1,34 +1,30 @@
-
 package handlers
 
 import (
 	"backend/chatbot"
-	"encoding/json"
 	"fmt"
-	"net/http"
+	"github.com/gofiber/fiber/v2"
 )
 
-func ChatbotHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Only POST method is allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
+func ChatbotHandler(c *fiber.Ctx) error {
 	var req chatbot.RequestBody
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := c.BodyParser(&req); err != nil {
 		fmt.Println(err)
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
 	}
 
 	response, err := chatbot.GenerateResponse(req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
 	}
 
 	fmt.Println(response)
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"response": response})
+	return c.JSON(fiber.Map{
+		"response": response,
+	})
 }

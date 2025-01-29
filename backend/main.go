@@ -1,14 +1,18 @@
 package main
 
 import (
-	"fmt"
-	"net/http"
-	"os"
+	"backend/database"
 	"backend/routes"
+	"fmt"
+	"os"
+
 	"github.com/clerk/clerk-sdk-go/v2"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
-	"github.com/rs/cors"
 )
+
+// Remove the FirebaseDB variable and initFirebase function as they're moved to database package
 
 func main() {
 	// Load environment variables from .env file
@@ -24,21 +28,25 @@ func main() {
 	fmt.Println("Clerk Secret Key:", os.Getenv("CLERK_SECRET_KEY"))
 	fmt.Println("GEMINI API KEY", os.Getenv("GEMINI_API_KEY"))
 
-	// Create a new HTTP server multiplexer
-	mux := http.NewServeMux()
+	// Create a new Fiber app
+	app := fiber.New()
+
+	// Configure CORS
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "http://localhost:3000",
+		AllowMethods: "GET,POST,PUT,DELETE",
+		AllowHeaders: "Content-Type,Authorization",
+	}))
+
+	// Initialize Firebase
+	database.InitFirebase()
 
 	// Register routes
-	routes.RegisterRoutes(mux)
+	routes.RegisterRoutes(app)
 
-	corsHandler := cors.New(cors.Options{
-		AllowedOrigins: []string{"http://localhost:3000"},         // Frontend origin
-		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},  // Allowed HTTP methods
-		AllowedHeaders: []string{"Content-Type", "Authorization"}, // Allowed headers
-	})
-
-	// Start the server with CORS middleware
+	// Start the server
 	fmt.Println("Server is running on http://localhost:8080")
-	if err := http.ListenAndServe(":8080", corsHandler.Handler(mux)); err != nil {
+	if err := app.Listen(":8080"); err != nil {
 		panic("Failed to start server: " + err.Error())
 	}
 }
