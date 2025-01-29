@@ -1,9 +1,11 @@
 package handlers
 
 import (
-	"net/http"
+	"github.com/gofiber/fiber/v2"
 )
 
-func PublicHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(`{"access": "public"}`))
+func PublicHandler(c *fiber.Ctx) error {
+	return c.JSON(fiber.Map{
+		"access": "public",
+	})
 }

@@ -2,16 +2,20 @@ package routes
 
 import (
 	"backend/handlers"
-	"net/http"
+
+	"github.com/gofiber/fiber/v2"
 )
 
-func RegisterRoutes(mux *http.ServeMux) {
+func RegisterRoutes(app *fiber.App) {
 	// Public route (no authentication required)
-	mux.HandleFunc("/", handlers.PublicHandler)
+	app.Get("/", handlers.PublicHandler)
 
 	// Protected route (requires authentication)
-	mux.HandleFunc("/protected", handlers.ProtectedHandler)
+	app.Get("/protected", handlers.ProtectedHandler)
 
 	// Chatbot route
-	mux.HandleFunc("/generate", handlers.ChatbotHandler)
+	app.Post("/generate", handlers.ChatbotHandler)
+
+	// Watchlist routes
+	app.All("/api/watchlist", handlers.WatchlistHandler)
 }

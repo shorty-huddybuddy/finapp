@@ -1,15 +1,22 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { SymbolOverviewWidget } from "@/components/symbol-overview-widget"
 import { MarketOverviewWidget } from "@/components/market-overview-widget"
 import { CustomScreener } from "@/components/custom-screener"
 import { TradingViewChart } from "@/components/trading-view-chart"
 import { StockSearch } from "@/components/stock-search"
+import { useUser } from "@clerk/nextjs";
+
 
 export default function Dashboard() {
+  const { user, isLoaded } = useUser()
+
   const [selectedSymbol, setSelectedSymbol] = useState("AAPL")
+
+  
+ 
 
   return (
     <div className="min-h-screen bg-background">

@@ -56,12 +56,10 @@ import (
 )
 
 type RequestBody struct {
-	Username              string  `json:"username"`
 	Balance               int     `json:"balance"`
 	Experience            string  `json:"experience"`
 	Preference            string  `json:"preference"`
-	Stock                 string  `json:"stock"`
-	Liquidity             float64 `json:"liquidity"`
+	Liquidity             string `json:"liquidity"`
 	RiskBearing           string  `json:"risk_bearing"`
 	MinimumFreezingPeriod int     `json:"minimum_freezing_period"`
 }
@@ -72,7 +70,6 @@ func GenerateResponse(req RequestBody) (string, error) {
 		Balance:               req.Balance,
 		Experience:            req.Experience,
 		Preference:            req.Preference,
-		Stock:                 req.Stock,
 		Liquidity:             req.Liquidity,
 		RiskBearing:           req.RiskBearing,
 		MinimumFreezingPeriod: req.MinimumFreezingPeriod,
@@ -88,7 +85,6 @@ func GenerateResponse(req RequestBody) (string, error) {
 	prompt := strings.ReplaceAll(string(promptBytes), "{balance}", fmt.Sprintf("%.2f", userPortfolio.Balance))
 	prompt = strings.ReplaceAll(prompt, "{experience}", userPortfolio.Experience)
 	prompt = strings.ReplaceAll(prompt, "{preference}", userPortfolio.Preference)
-	prompt = strings.ReplaceAll(prompt, "{stock}", userPortfolio.Stock)
 	prompt = strings.ReplaceAll(prompt, "{liquidity}", fmt.Sprintf("%.2f", userPortfolio.Liquidity))
 	prompt = strings.ReplaceAll(prompt, "{risk_bearing}", userPortfolio.RiskBearing)
 	prompt = strings.ReplaceAll(prompt, "{minimum_freezing_period}", fmt.Sprintf("%d", userPortfolio.MinimumFreezingPeriod))

@@ -4,6 +4,7 @@
 .env.*
 frontend/.env*
 backend/.env*
+backend/api_key.json
 
 # Dependencies
 node_modules/
