@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowDown, ArrowUp } from "lucide-react"
 
 interface TopCoinsProps {
-  data: any[]
+  data: any[]|null
   onSelectCoin: (coin: string) => void
 }
 
