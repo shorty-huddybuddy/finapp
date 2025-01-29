@@ -9,11 +9,45 @@ import { TradingViewChart } from "@/components/trading-view-chart"
 import { StockSearch } from "@/components/stock-search"
 import { useUser } from "@clerk/nextjs";
 
+import crypto from "crypto"
 
 export default function Dashboard() {
   const { user, isLoaded } = useUser()
 
   const [selectedSymbol, setSelectedSymbol] = useState("AAPL")
+
+  useEffect(() => {
+    // Load the chatbot script
+    const onLoad = () => {
+      const script = document.createElement("script")
+      script.src = "https://www.chatbase.co/embed.min.js"
+      script.id = "2In_f7kIwyagxPktG5fIe"
+      script.setAttribute("data-domain", "www.chatbase.co")
+      document.body.appendChild(script)
+    }
+
+    if (document.readyState === "complete") {
+      onLoad()
+    } else {
+      window.addEventListener("load", onLoad)
+    }
+
+    // Cleanup function to remove the script when the component unmounts
+    return () => {
+      const script = document.getElementById("2In_f7kIwyagxPktG5fIe")
+      if (script) {
+        document.body.removeChild(script)
+      }
+    }
+  }, [])
+
+  // Example user authentication (if needed)
+  const current_user = { id: "user-uuid-here" } // Replace with actual user ID
+  const secret = "h0evxrcvs1g8dynoburr3957l39arwsy" // Your verification secret key
+  const userId = current_user.id
+  const hash = crypto.createHmac("sha256", secret).update(userId).digest("hex")
+
+  // You can now use `hash` and `userId` to authenticate the user with the chatbot service
 
   
  
@@ -52,4 +86,3 @@ export default function Dashboard() {
     </div>
   )
 }
-
