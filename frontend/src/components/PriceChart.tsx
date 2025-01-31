@@ -1,6 +1,7 @@
 "use client"
 
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
+import React from "react"
 
 const data = [
   { time: "19:00", price: 5459 },

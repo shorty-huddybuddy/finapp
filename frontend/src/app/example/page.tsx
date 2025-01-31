@@ -1,4 +1,5 @@
 "use client"
+import React from "react"
 import { useAuth } from "@clerk/nextjs"
 
 export default function Example() {
