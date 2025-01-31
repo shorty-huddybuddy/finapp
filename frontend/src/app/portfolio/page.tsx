@@ -1,13 +1,17 @@
 'use client'
 
+import React from "react"
 import { useState, useEffect } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
 import { motion, AnimatePresence } from 'framer-motion'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 import { Plus, Trash2, DollarSign, TrendingUp, TrendingDown, Edit2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '../../components/ui/button'
+import { Input } from '../../components/ui/input'
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
+import {Navbar } from '../../components/Navbar'
+import {Footer} from '../../components/Footer'
+
 import {
   Dialog,
   DialogContent,
@@ -15,7 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
+} from "../../components/ui/dialog"
 import { useUser } from '@clerk/nextjs'
 
 type WatchlistItem = {
@@ -205,6 +209,9 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white text-blue-900 p-8">
+      
+      <Navbar/><br/><br/>
+
       <Toaster position="top-right" />
       {!isLoaded ? (
         <div className="flex items-center justify-center h-64">
@@ -441,6 +448,8 @@ export default function Dashboard() {
           </Dialog>
         </>
       )}
+
+      <Footer/>
     </div>
   )
 }

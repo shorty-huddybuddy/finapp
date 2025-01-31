@@ -1,9 +1,9 @@
 "use client"
-
+import React from "react"
 import { useState, useEffect, useRef } from "react"
 import { Search, X, Loader2 } from "lucide-react"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+import { Input } from "../components/ui/input"
+import { Button } from "../components/ui/button"
 import {
   Command,
   CommandEmpty,
@@ -12,8 +12,8 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from "@/components/ui/command"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+} from "../components/ui/command"
+import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover"
 
 interface Symbol {
   symbol: string
