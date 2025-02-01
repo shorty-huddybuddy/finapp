@@ -3,6 +3,10 @@ package services
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+
+	"github.com/valyala/fastjson"
 
 	finnhub "github.com/Finnhub-Stock-API/finnhub-go/v2"
 )
@@ -13,6 +17,24 @@ type PriceFetcher interface {
 
 type RealTimePriceFetcher struct {
 	client *finnhub.DefaultApiService
+}
+
+type nprice struct {
+}
+
+func extractMarketPrice(body []byte) (float64, error) {
+	var p fastjson.Parser
+	v, err := p.ParseBytes(body)
+	if err != nil {
+		return 0, err
+	}
+
+	// Navigate JSON structure using fastjson
+	price := v.GetFloat64("chart", "result", "0", "meta", "regularMarketPrice")
+	if price == 0 {
+		price = -1
+	}
+	return price, nil
 }
 
 func NewRealTimePriceFetcher(apiKey string) *RealTimePriceFetcher {
@@ -29,9 +51,32 @@ func NewRealTimePriceFetcher(apiKey string) *RealTimePriceFetcher {
 func (f *RealTimePriceFetcher) GetCurrentPrice(ticker string, assetType string) (float64, error) {
 	switch assetType {
 	case "stock":
-		return f.fetchStockPrice(ticker)
+		price, err := f.fetchStockPrice(ticker)
+		if err != nil || price == 0 {
+			url := fmt.Sprintf("https://query1.finance.yahoo.com/v7/finance/chart/%s.NS", ticker)
+
+			nprice, err := http.Get(url)
+			if err != nil {
+				return -1, nil
+			}
+			defer nprice.Body.Close()
+
+			body, err := ioutil.ReadAll(nprice.Body)
+			if err != nil {
+				return 0, err
+			}
+			
+			return extractMarketPrice(body)
+
+		}
+		return price, nil
 	case "crypto":
-		return f.fetchCryptoPrice(ticker)
+		price, err := f.fetchCryptoPrice(ticker)
+		if err != nil {
+			return -1, nil
+		}
+		return price, nil
+
 	default:
 		return 0, fmt.Errorf("unsupported asset type: %s", assetType)
 	}

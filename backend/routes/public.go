@@ -20,4 +20,5 @@ func RegisterRoutes(app *fiber.App) {
 	app.All("/api/watchlist", handlers.WatchlistHandler)
 
 	app.Get("/api/search", handlers.SearchHandler)
+	app.Get("/api/price", handlers.PriceHandler)
 }
