@@ -1,7 +1,7 @@
 'use client'
 
-import React from "react"
-import { useState, useEffect } from 'react'
+import React, { useEffect, useRef } from "react"
+import { useState } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
 import { motion, AnimatePresence } from 'framer-motion'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
@@ -93,6 +93,8 @@ export default function Dashboard() {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResponse | null>(null)
   const [currentPage, setCurrentPage] = useState(0);
   const [insightPage, setInsightPage] = useState(0);
+  const [isTickerValid, setIsTickerValid] = useState(true);
+  const searchResultsRef = useRef<HTMLDivElement>(null);
 
   const debouncedSearch = debounce(async (query: string) => {
     if (query.length < 1) {
@@ -178,11 +180,36 @@ export default function Dashboard() {
     }
   }
 
+  const validateTicker = async (ticker: string, type: AssetType) => {
+    try {
+      const response = await fetch(`http://127.0.0.1:8080/api/price?ticker=${ticker}&category=${type}`);
+      const data = await response.json();
+      
+      if (data.price === -1) {
+        setIsTickerValid(false);
+        toast.error('Invalid ticker symbol');
+        return false;
+      }
+      
+      setIsTickerValid(true);
+      return true;
+    } catch (error) {
+      setIsTickerValid(false);
+      toast.error('Error validating ticker');
+      return false;
+    }
+  };
+
   const addToWatchlist = async () => {
-    if (!userId) return
+    if (!userId) return;
+    
+    // Validate ticker before proceeding
+    const isValid = await validateTicker(newTicker, newType);
+    if (!isValid) return;
+
     if (parseFloat(newBuyPrice) <= 0) {
       toast.error('Buy price must be greater than 0')
-      return
+      return;
     }
     try {
       const response = await fetch('http://127.0.0.1:8080/api/watchlist', {
@@ -312,6 +339,19 @@ export default function Dashboard() {
   }
 
   // Handle loading and authentication states
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (searchResultsRef.current && !searchResultsRef.current.contains(event.target as Node)) {
+        setSearchResults([]);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   if (!isLoaded) {
     return <div className="min-h-screen flex items-center justify-center">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -675,12 +715,24 @@ export default function Dashboard() {
     onChange={(e) => {
       setNewTicker(e.target.value)
       debouncedSearch(e.target.value)
+      setIsTickerValid(true); // Reset validation on new input
     }}
     placeholder="Ticker (e.g., AAPL, BTC)"
-    className="border-blue-300 focus:border-blue-500"
+    className={`border-blue-300 focus:border-blue-500 ${
+      !isTickerValid ? 'border-red-500' : ''
+    }`}
   />
+  {!isTickerValid && (
+    <div className="text-red-500 text-sm mt-1">
+      Invalid ticker symbol
+    </div>
+  )}
   {searchResults.length > 0 && newTicker.length > 0 && (
-    <div className="absolute w-full z-50 mt-1 bg-white rounded-lg border shadow-md max-h-[200px] overflow-y-auto">
+    <div 
+      ref={searchResultsRef}
+      className="absolute w-full z-50 mt-1 bg-white rounded-lg border shadow-md max-h-[200px] overflow-y-auto"
+      style={{ maxHeight: '200px' }}
+    >
       {searchResults.map((result) => (
         <div
           key={`${result.symbol}-${result.description}`}
