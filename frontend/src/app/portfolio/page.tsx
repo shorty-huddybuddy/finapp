@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
 import { motion, AnimatePresence } from 'framer-motion'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
-import { Plus, Trash2, DollarSign, TrendingUp, TrendingDown, Edit2 } from 'lucide-react'
+import { Plus, Trash2, DollarSign, TrendingUp, TrendingDown, Edit2, Command } from 'lucide-react'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
@@ -21,6 +21,9 @@ import {
   DialogTrigger,
 } from "../../components/ui/dialog"
 import { useUser } from '@clerk/nextjs'
+import { debounce } from "lodash"
+import axios from "axios"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 type WatchlistItem = {
   user_id: string
@@ -104,9 +107,10 @@ export default function Dashboard() {
        response = await fetch(`http://127.0.0.1:8080/api/search?symbol=${query}&type=stock`)
        } else {
         response = await fetch(`http://127.0.0.1:8080/api/search?symbol=${query}&type=crypto`)
-
        }
+       
       const data = await response.json()
+      // console.log(data)
       setSearchResults(data)
     } catch (error) {
       console.error('Search error:', error)
@@ -676,30 +680,24 @@ export default function Dashboard() {
     className="border-blue-300 focus:border-blue-500"
   />
   {searchResults.length > 0 && newTicker.length > 0 && (
-    <div className="absolute w-full z-50 mt-1">
-      <Command className="rounded-lg border shadow-md">
-        <ScrollArea className="h-[200px]">
-          <CommandGroup>
-            {searchResults.map((result) => (
-              <CommandItem
-                key={`${result.symbol}-${result.description}`}
-                onSelect={() => {
-                  setNewTicker(result.symbol)
-                  setSearchResults([])
-                }}
-                className="cursor-pointer hover:bg-blue-50"
-              >
-                <div className="flex flex-col py-2">
-                  <span className="font-medium">{result.symbol}</span>
-                  <span className="text-sm text-muted-foreground truncate">
-                    {result.description}
-                  </span>
-                </div>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        </ScrollArea>
-      </Command>
+    <div className="absolute w-full z-50 mt-1 bg-white rounded-lg border shadow-md max-h-[200px] overflow-y-auto">
+      {searchResults.map((result) => (
+        <div
+          key={`${result.symbol}-${result.description}`}
+          onClick={() => {
+            setNewTicker(result.symbol)
+            setSearchResults([])
+          }}
+          className="p-2 hover:bg-blue-50 cursor-pointer border-b last:border-b-0"
+        >
+          <div className="flex flex-col">
+            <span className="font-medium">{result.symbol}</span>
+            <span className="text-sm text-gray-500 truncate">
+              {result.description}
+            </span>
+          </div>
+        </div>
+      ))}
     </div>
   )}
 </div>
