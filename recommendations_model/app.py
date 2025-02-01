@@ -31,7 +31,16 @@ def get_stock_predictions(ticker: str = "AAPL",period: str = "1y",interval: str 
     print(df_ml)
 
     if df_ml.empty:
-        return JSONResponse(content={"error": "No stock data available for the given ticker and period"}, status_code=400)
+        df_ml = yf.download(tickers=ticker+".NS", period=period, interval=interval)
+        print(df_ml)
+        if df_ml.empty:
+            df_ml = yf.download(tickers=ticker+"-USD", period=period, interval=interval)
+            print(df_ml)
+            if df_ml.empty:
+                df_ml = yf.download(tickers=ticker+".BO", period=period, interval=interval)
+                print(df_ml)
+                if df_ml.empty:
+                    return JSONResponse(content={"error": "No stock data available for the given ticker and period"}, status_code=400)
 
     df_ml = df_ml[['Close']]
     
@@ -67,8 +76,8 @@ def get_stock_predictions(ticker: str = "AAPL",period: str = "1y",interval: str 
         Dense(16, activation='relu'),
         Dense(1, activation='relu')
     ])
-    model_lstm.compile(optimizer='adam', loss='mse')
-    model_lstm.fit(X, y, epochs=100, batch_size=32, verbose=0)
+    model_lstm.compile(optimizer='adam', loss='mse' ,metrics=['mae'] )
+    model_lstm.fit(X, y, epochs=100, batch_size=32, verbose=1)
     forecast_lstm = model_lstm.predict(X_forecast).tolist()
 
     # GRU Model

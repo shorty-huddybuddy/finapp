@@ -8,6 +8,7 @@ import {Testimonails} from "../components/Testimonails";
 import {Features} from "../components/Features";
 import "bootstrap/dist/css/bootstrap.min.css"; // Import Bootstrap CSS
 import { Header } from "../components/Header";
+import { Navbar } from "../components/Navbar";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
       {/* <MarketTicker /> */}
 
       {/* Hero Section */}
+      <Navbar/>
       <Header/>
 
       {/* Features Section */}

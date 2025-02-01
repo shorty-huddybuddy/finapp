@@ -1,13 +1,10 @@
 import React from 'react';
-import { Navbar } from './Navbar';
 import {LineChart,ArrowRight,Sparkles,} from "lucide-react";
 
 
 export function Header (){
     return (
-    <header className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
-        <Navbar/>
- 
+      <header className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
         <div className="container mx-auto px-6 py-24">
           <div className="max-w-3xl">
             <div className="flex items-center space-x-2 mb-4">
