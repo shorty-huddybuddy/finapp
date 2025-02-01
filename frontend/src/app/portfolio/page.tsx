@@ -8,6 +8,11 @@ import { Plus, Trash2, DollarSign, TrendingUp, TrendingDown, Edit2 } from 'lucid
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Command, CommandGroup, CommandItem } from "@/components/ui/command"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import debounce from 'lodash/debounce'
+import axios from "axios"
+
 import {
   Dialog,
   DialogContent,
@@ -30,20 +35,49 @@ type WatchlistItem = {
   pnl: number
 }
 
+type SearchResult = {
+    symbol: string
+    description: string
+  }
 
 type WatchlistData = {
   watchlist: WatchlistItem[]
   total_portfolio_value: number
   total_pnl: number
   holdings_distribution: Record<string, number>
+  investment_by_type: Record<string, number>
+  profit_by_asset: Record<string, {
+    amount: number
+    percentage_gain: number
+    invested_amount: number
+    current_value: number
+  }>
 }
 
+type AssetType = 'stock' | 'crypto';
+
+type AnalysisResponse = {
+  asset_recommendations: Array<{
+    ticker: string
+    action: string
+    reason: string
+  }>
+  risk_analysis: {
+    current_risk_exposure: Record<string, string>
+    adjustment_suggestions: Record<string, string>
+  }
+  general_trend_insights: Array<{
+    sector: string
+    recommendation: string
+    reason: string
+  }>
+}
 
 export default function Dashboard() {
   const [watchlistData, setWatchlistData] = useState<WatchlistData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [newTicker, setNewTicker] = useState('')
-  const [newType, setNewType] = useState<'stock' | 'crypto'>('stock')
+  const [newType, setNewType] = useState<AssetType>('stock')
   const [newBuyPrice, setNewBuyPrice] = useState('')
   const [newQuantity, setNewQuantity] = useState('')
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
@@ -51,6 +85,37 @@ export default function Dashboard() {
   const [editingItem, setEditingItem] = useState<WatchlistItem | null>(null)
   const { user, isLoaded } = useUser()
   const [userId, setUserId] = useState<string | null>(null)
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResponse | null>(null)
+  const [currentPage, setCurrentPage] = useState(0);
+  const [insightPage, setInsightPage] = useState(0);
+
+  const debouncedSearch = debounce(async (query: string) => {
+    if (query.length < 1) {
+      setSearchResults([])
+      return
+    }
+    setIsSearching(true)
+    try {
+        var response
+       
+       if(newType === 'stock'){ 
+       response = await fetch(`http://127.0.0.1:8080/api/search?symbol=${query}&type=stock`)
+       } else {
+        response = await fetch(`http://127.0.0.1:8080/api/search?symbol=${query}&type=crypto`)
+
+       }
+      const data = await response.json()
+      setSearchResults(data)
+    } catch (error) {
+      console.error('Search error:', error)
+      toast.error('Failed to search symbols')
+    } finally {
+      setIsSearching(false)
+    }
+  }, 300)
 
   const EmptyStateMessage = () => (
     <div className="text-center py-10">
@@ -90,7 +155,9 @@ export default function Dashboard() {
         watchlist: data.watchlist || [],
         total_portfolio_value: data.total_portfolio_value || 0,
         total_pnl: data.total_pnl || 0,
-        holdings_distribution: data.holdings_distribution || {}
+        holdings_distribution: data.holdings_distribution || {},
+        investment_by_type: data.investment_by_type || {},
+        profit_by_asset: data.profit_by_asset || {}
       })
     } catch (error) {
       console.error('Error fetching watchlist data:', error)
@@ -99,7 +166,9 @@ export default function Dashboard() {
         watchlist: [],
         total_portfolio_value: 0,
         total_pnl: 0,
-        holdings_distribution: {}
+        holdings_distribution: {},
+        investment_by_type: {},
+        profit_by_asset: {}
       })
     } finally {
       setIsLoading(false)
@@ -108,6 +177,10 @@ export default function Dashboard() {
 
   const addToWatchlist = async () => {
     if (!userId) return
+    if (parseFloat(newBuyPrice) <= 0) {
+      toast.error('Buy price must be greater than 0')
+      return
+    }
     try {
       const response = await fetch('http://127.0.0.1:8080/api/watchlist', {
         method: 'POST',
@@ -187,6 +260,54 @@ export default function Dashboard() {
 
   const COLORS = ['#3B82F6', '#60A5FA', '#93C5FD', '#BFDBFE', '#DBEAFE']
 
+  // Add this debugging function
+  const formatProfitData = (profitData: Record<string, {
+    amount: number
+    percentage_gain: number
+    invested_amount: number
+    current_value: number
+  }>) => {
+    return Object.entries(profitData).map(([ticker, data]) => ({
+      name: ticker,
+      value: Math.abs(data.percentage_gain), // Use absolute value for visualization
+      originalValue: data.percentage_gain,
+    }));
+  };
+
+  const handleAnalyzePortfolio = async () => {
+    if (!watchlistData) return
+    setIsAnalyzing(true)
+    try {
+
+      const response = await axios.post("http://localhost:8080/generate?type=analyzer",watchlistData)
+
+      // const response = await fetch('http://127.0.0.1:8080/generate?type=analyzer', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify(watchlistData),
+      // })
+      
+      
+      
+      const rdata = await response.data
+      const jsonString = rdata.response.replace(/```json\n|\n```/g, '');
+
+    // Parse the JSON string into a JavaScript object
+    const cleanedData = JSON.parse(jsonString);
+
+    // Log the cleaned data
+    console.log(cleanedData);
+      setAnalysisResult(cleanedData)
+    } catch (error) {
+      console.error('Analysis error:', error)
+      toast.error('Failed to analyze portfolio. Please try again.')
+    } finally {
+      setIsAnalyzing(false)
+    }
+  }
+
   // Handle loading and authentication states
   if (!isLoaded) {
     return <div className="min-h-screen flex items-center justify-center">
@@ -225,7 +346,202 @@ export default function Dashboard() {
         <>
           <h1 className="text-4xl font-bold mb-8 text-center text-blue-800">🚀 Crypto & Stock Watchlist</h1>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+          <Button 
+            onClick={handleAnalyzePortfolio} 
+            className="mb-4 bg-green-600 hover:bg-green-700 text-white"
+            disabled={isAnalyzing}
+          >
+            {isAnalyzing ? 'Analyzing...' : 'Get Your Portfolio Analyzed by AI'}
+          </Button>
+
+          {analysisResult && (
+  <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-50">
+    <div className="bg-white rounded-xl w-11/12 md:w-3/4 lg:w-4/5 h-[90vh] flex flex-col">
+      {/* Header */}
+      <div className="p-4 border-b">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-blue-800">Portfolio Analysis</h2>
+          <button onClick={() => setAnalysisResult(null)} className="p-2 hover:bg-gray-100 rounded-full">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* Content Area */}
+      <div className="flex-1 p-6 grid grid-cols-12 gap-8">
+        {/* Main Content Column */}
+        <div className="col-span-8 space-y-8">
+          {/* Asset Recommendations */}
+          <div className='bg-white rounded-lg'>
+            <h3 className="text-xl font-semibold text-blue-700 mb-4">Asset Recommendations</h3>
+            <div className="relative">
+              <div className="grid grid-cols-2 gap-4">
+                {analysisResult.asset_recommendations.slice(currentPage * 2, (currentPage * 2) + 2).map((rec, index) => (
+                  <div key={index} className={`p-4 rounded-lg shadow-md h-fit ${
+                    rec.action === 'BUY' ? 'bg-gradient-to-br from-green-50 to-green-100 border-l-4 border-green-400' :
+                    rec.action === 'SELL' ? 'bg-gradient-to-br from-red-50 to-red-100 border-l-4 border-red-400' :
+                    'bg-gradient-to-br from-yellow-50 to-yellow-100 border-l-4 border-yellow-400'
+                  }`}>
+                    <div className="flex justify-between items-center mb-3">
+                      <h4 className="text-xl font-bold">{rec.ticker}</h4>
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        rec.action === 'BUY' ? 'bg-green-200 text-green-800' :
+                        rec.action === 'SELL' ? 'bg-red-200 text-red-800' :
+                        'bg-yellow-200 text-yellow-800'
+                      }`}>{rec.action}</span>
+                    </div>
+                    <p className="text-sm text-gray-700">{rec.reason}</p>
+                  </div>
+                ))}
+              </div>
+
+              {analysisResult.asset_recommendations.length > 2 && (
+                <div className="absolute inset-y-0 -left-4 -right-4 flex items-center justify-between">
+                  <button 
+                    onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+                    className="transform -translate-x-1/2 bg-white shadow-lg rounded-full p-3 hover:bg-gray-50 disabled:opacity-50 z-10"
+                    disabled={currentPage === 0}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  <button 
+                    onClick={() => setCurrentPage(p => p + 1)}
+                    className="transform translate-x-1/2 bg-white shadow-lg rounded-full p-3 hover:bg-gray-50 disabled:opacity-50 z-10"
+                    disabled={currentPage >= Math.ceil(analysisResult.asset_recommendations.length / 2) - 1}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Pagination Dots */}
+            <div className="flex justify-center mt-4 gap-2">
+              {Array.from({ length: Math.ceil(analysisResult.asset_recommendations.length / 2) }).map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentPage(idx)}
+                  className={`w-2 h-2 rounded-full transition-colors ${
+                    currentPage === idx ? 'bg-blue-600' : 'bg-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+
+         {/* Market Insights */}
+<div className="bg-indigo-50 p-6 rounded-lg">
+  <h3 className="text-xl font-semibold text-indigo-700 mb-4">Market Insights</h3>
+  <div className="relative">
+    <div className="grid grid-cols-2 gap-4">
+      {analysisResult.general_trend_insights
+        .slice(insightPage * 2, (insightPage * 2) + 2)
+        .map((insight, index) => (
+        <div key={index} className="bg-white/60 p-3 rounded-lg">
+          <div className="flex justify-between items-center mb-2">
+            <span className="font-medium">{insight.sector}</span>
+            <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+              insight.recommendation === 'Decrease' ? 'bg-red-100 text-red-700' :
+              insight.recommendation === 'Increase' ? 'bg-green-100 text-green-700' :
+              'bg-yellow-100 text-yellow-700'
+            }`}>{insight.recommendation}</span>
+          </div>
+          <p className="text-sm text-gray-600">{insight.reason}</p>
+        </div>
+      ))}
+    </div>
+
+    {analysisResult.general_trend_insights.length > 2 && (
+      <div className="absolute inset-y-0 -left-4 -right-4 flex items-center justify-between">
+        <button 
+          onClick={() => setInsightPage(p => Math.max(0, p - 1))}
+          className="transform -translate-x-1/2 bg-white shadow-lg rounded-full p-3 hover:bg-gray-50 disabled:opacity-50 z-10"
+          disabled={insightPage === 0}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <button 
+          onClick={() => setInsightPage(p => p + 1)}
+          className="transform translate-x-1/2 bg-white shadow-lg rounded-full p-3 hover:bg-gray-50 disabled:opacity-50 z-10"
+          disabled={insightPage >= Math.ceil(analysisResult.general_trend_insights.length / 2) - 1}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+    )}
+
+    {/* Pagination Dots */}
+    {analysisResult.general_trend_insights.length > 2 && (
+      <div className="flex justify-center mt-4 gap-2">
+        {Array.from({ length: Math.ceil(analysisResult.general_trend_insights.length / 2) })
+          .map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setInsightPage(idx)}
+              className={`w-2 h-2 rounded-full transition-colors ${
+                insightPage === idx ? 'bg-indigo-600' : 'bg-gray-300'
+              }`}
+            />
+          ))}
+      </div>
+    )}
+  </div>
+</div>
+
+        </div>
+
+        {/* Right Column - Risk Analysis */}
+        <div className="col-span-4 px-2 flex items-center">
+  <div className="bg-blue-50 p-6 rounded-lg w-full">
+    <h3 className="text-xl font-semibold text-blue-700 mb-6 text-center">Risk Analysis</h3>
+    <div className="space-y-6">
+      {Object.entries(analysisResult.risk_analysis.current_risk_exposure).map(([risk, value]) => (
+        <div key={risk} className="space-y-1">
+          <div className="flex justify-between text-sm">
+            <span className="capitalize">{risk.replace('_', ' ')}</span>
+            <span>{value}</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className={`h-2 rounded-full transition-all ${
+                risk === 'high_risk' ? 'bg-red-500' :
+                risk === 'medium_risk' ? 'bg-yellow-500' :
+                'bg-green-500'
+              }`}
+              style={{ width: value }}
+            />
+          </div>
+        </div>
+      ))}
+      
+      {/* Risk adjustment suggestion */}
+      {analysisResult.risk_analysis.adjustment_suggestions.decrease_risk_exposure === 'YES' && (
+        <div className="mt-4 p-3 bg-red-100 rounded-lg">
+          <p className="text-sm text-red-800">
+            {analysisResult.risk_analysis.adjustment_suggestions.reason}
+          </p>
+        </div>
+      )}
+    </div>
+  </div>
+</div>
+      </div>
+    </div>
+  </div>
+)}
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            {/* First Card: Portfolio Overview + Investment by Type */}
             <Card className="bg-white border-blue-200 shadow-md">
               <CardHeader>
                 <CardTitle className="flex items-center text-blue-800">
@@ -236,13 +552,24 @@ export default function Dashboard() {
               <CardContent>
                 {watchlistData && watchlistData.watchlist && watchlistData.watchlist.length > 0 ? (
                   <>
-                    <p className="text-2xl font-bold mb-2 text-blue-900">
-                      ${watchlistData.total_portfolio_value.toLocaleString()}
-                    </p>
-                    <p className={`text-lg ${watchlistData.total_pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {watchlistData.total_pnl >= 0 ? <TrendingUp className="inline mr-2" /> : <TrendingDown className="inline mr-2" />}
-                      ${watchlistData.total_pnl.toLocaleString()}
-                    </p>
+                    <div className="mb-6">
+                      <p className="text-2xl font-bold mb-2 text-blue-900">
+                        ${watchlistData.total_portfolio_value.toLocaleString()}
+                      </p>
+                      <p className={`text-lg ${watchlistData.total_pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {watchlistData.total_pnl >= 0 ? <TrendingUp className="inline mr-2" /> : <TrendingDown className="inline mr-2" />}
+                        ${watchlistData.total_pnl.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="border-t pt-4">
+                      <h3 className="text-lg font-semibold mb-2 text-blue-800">Investment by Type</h3>
+                      {Object.entries(watchlistData.investment_by_type).map(([type, amount]) => (
+                        <div key={type} className="flex justify-between items-center mb-2">
+                          <span className="capitalize">{type}</span>
+                          <span className="font-semibold">${amount.toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
                   </>
                 ) : (
                   <EmptyPortfolioCard />
@@ -250,6 +577,7 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
+            {/* Second Card: Holdings Distribution */}
             <Card className="bg-white border-blue-200 shadow-md">
               <CardHeader>
                 <CardTitle className="text-blue-800">Holdings Distribution</CardTitle>
@@ -279,6 +607,42 @@ export default function Dashboard() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Third Card: Profit Distribution */}
+            <Card className="bg-white border-blue-200 shadow-md">
+              <CardHeader>
+                <CardTitle className="text-blue-800">Profit Distribution</CardTitle>
+              </CardHeader>
+              <CardContent className="h-64">
+                {watchlistData && watchlistData.profit_by_asset && 
+                Object.keys(watchlistData.profit_by_asset).length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={formatProfitData(watchlistData.profit_by_asset)}
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                        label={({ name, originalValue }) => 
+                          `${name} (${originalValue >= 0 ? '+' : ''}${originalValue.toFixed(1)}%)`
+                        }
+                      >
+                        {formatProfitData(watchlistData.profit_by_asset).map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={entry.originalValue >= 0 ? '#22c55e' : '#ef4444'}
+                          />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <EmptyPortfolioCard />
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           <Card className="bg-white border-blue-200 shadow-md mb-8">
@@ -299,12 +663,46 @@ export default function Dashboard() {
                       </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
-                      <Input
-                        value={newTicker}
-                        onChange={(e) => setNewTicker(e.target.value)}
-                        placeholder="Ticker (e.g., AAPL, BTC)"
-                        className="border-blue-300 focus:border-blue-500"
-                      />
+                    <div className="relative">
+  <Input
+    value={newTicker}
+    onChange={(e) => {
+      setNewTicker(e.target.value)
+      debouncedSearch(e.target.value)
+    }}
+    placeholder="Ticker (e.g., AAPL, BTC)"
+    className="border-blue-300 focus:border-blue-500"
+  />
+  {searchResults.length > 0 && newTicker.length > 0 && (
+    <div className="absolute w-full z-50 mt-1">
+      <Command className="rounded-lg border shadow-md">
+        <ScrollArea className="h-[200px]">
+          <CommandGroup>
+            {searchResults.map((result) => (
+              <CommandItem
+                key={`${result.symbol}-${result.description}`}
+                onSelect={() => {
+                  setNewTicker(result.symbol)
+                  setSearchResults([])
+                }}
+                className="cursor-pointer hover:bg-blue-50"
+              >
+                <div className="flex flex-col py-2">
+                  <span className="font-medium">{result.symbol}</span>
+                  <span className="text-sm text-muted-foreground truncate">
+                    {result.description}
+                  </span>
+                </div>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </ScrollArea>
+      </Command>
+    </div>
+  )}
+</div>
+
+
                       <select
                         value={newType}
                         onChange={(e) => setNewType(e.target.value as 'stock' | 'crypto')}
@@ -318,6 +716,8 @@ export default function Dashboard() {
                         onChange={(e) => setNewBuyPrice(e.target.value)}
                         placeholder="Buy Price"
                         type="number"
+                        min="0.01"
+                        step="0.01"
                         className="border-blue-300 focus:border-blue-500"
                       />
                       <Input
@@ -419,12 +819,21 @@ export default function Dashboard() {
                     value={editingItem.type}
                     onChange={(e) => setEditingItem({...editingItem, type: e.target.value as 'stock' | 'crypto'})}
                     className="bg-white text-blue-900 rounded-md p-2 border border-blue-300 focus:border-blue-500"
-                  />
+                  >
+                    <option value="stock">Stock</option>
+                    <option value="crypto">Crypto</option>
+                  </select>
                   <Input
                     value={editingItem.buy_price}
-                    onChange={(e) => setEditingItem({...editingItem, buy_price: parseFloat(e.target.value)})}
+                    onChange={(e) => {
+                      const value = parseFloat(e.target.value)
+                      if (value <= 0) return // Prevent negative or zero values
+                      setEditingItem({...editingItem, buy_price: value})
+                    }}
                     placeholder="Buy Price"
                     type="number"
+                    min="0.01"
+                    step="0.01"
                     className="border-blue-300 focus:border-blue-500"
                   />
                   <Input
@@ -432,6 +841,7 @@ export default function Dashboard() {
                     onChange={(e) => setEditingItem({...editingItem, quantity: parseInt(e.target.value)})}
                     placeholder="Quantity"
                     type="number"
+                    min="1"
                     className="border-blue-300 focus:border-blue-500"
                   />
                   <Button onClick={updateWatchlistItem} className="bg-blue-600 hover:bg-blue-700 text-white">Update Item</Button>

@@ -1,3 +1,4 @@
+"use client"
 // import React, { useState, useRef, useEffect } from 'react';
 // import { GoogleGenerativeAI } from '@google/generative-ai';
 // import { MessageCircle, Send, X, Loader2 } from 'lucide-react';
@@ -184,7 +185,7 @@
 // }
 
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState} from "react";
 import { MessageCircle, X } from "lucide-react";
 
 export function Chatbot() {
@@ -206,7 +207,7 @@ export function Chatbot() {
           <div className="flex items-center justify-between p-4 border-b">
             <div className="flex items-center space-x-2">
               <MessageCircle className="h-5 w-5 text-blue-600" />
-              <h3 className="font-semibold">FinanceHub Assistant</h3>
+              <h3 className="font-semibold">Financub Assistant</h3>
             </div>
             <button
               onClick={() => setIsOpen(false)}
@@ -216,12 +217,8 @@ export function Chatbot() {
             </button>
           </div>
           <div className="flex-1">
-            <iframe
-              src="https://www.chatbase.co/chatbot-iframe/jVwrZtEkRBqBMo_eOV3Aq"
-              width="100%"
-              style={{ height: "500px", border: "none" }}
-              frameBorder="0"
-            />
+          <script src="https://cdn.botpress.cloud/webchat/v2.2/inject.js"></script>
+          <script src="https://files.bpcontent.cloud/2025/01/30/17/20250130173815-F4D2QRFX.js"></script>
           </div>
         </div>
       )}

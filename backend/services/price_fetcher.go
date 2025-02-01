@@ -63,10 +63,3 @@ func (f *RealTimePriceFetcher) fetchCryptoPrice(ticker string) (float64, error) 
 
 	return float64(*quote.C), nil
 }
-
-// func main() {
-// 	priceFetcher := NewRealTimePriceFetcher("cuad5apr01qkpes4pk2gcuad5apr01qkpes4pk30")
-// 	price, err := priceFetcher.GetCurrentPrice("SOL", "crypto")
-// 	fmt.Println(price, err)
-
-// }
