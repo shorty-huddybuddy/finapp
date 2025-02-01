@@ -1,6 +1,8 @@
 "use client"
 
 import { useEffect, useRef } from "react"
+import React from "react"
+
 
 interface ScreenerWidgetProps {
   defaultScreen: "general" | "performance" | "valuation" | "divide" | "custom"

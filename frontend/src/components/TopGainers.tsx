@@ -1,5 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { ArrowUp } from "lucide-react"
+import React from "react"
 
 interface TopGainersProps {
   data: any[]

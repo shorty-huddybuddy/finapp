@@ -1,8 +1,10 @@
 "use client"
 
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
+import { Button } from "../components/ui/button"
+import React from "react"
+
 
 interface ChartData {
   date: string
