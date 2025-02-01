@@ -18,4 +18,6 @@ func RegisterRoutes(app *fiber.App) {
 
 	// Watchlist routes
 	app.All("/api/watchlist", handlers.WatchlistHandler)
+
+	app.Get("/api/search", handlers.SearchHandler)
 }
