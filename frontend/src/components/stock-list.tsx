@@ -1,5 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react"
+import React from "react"
+
 
 interface Stock {
   symbol: string

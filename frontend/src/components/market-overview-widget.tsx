@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
+import React from "react"
 
 export function MarketOverviewWidget() {
   const container = useRef<HTMLDivElement>(null)

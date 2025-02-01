@@ -1,7 +1,8 @@
-import { Card, CardContent } from "@/components/ui/card"
+import React from "react"
+import { Card, CardContent } from "../components/ui/card"
 import { ArrowDown, ArrowUp } from "lucide-react"
 import { memo } from 'react'
-import { useQuery } from 'react-query'
+// import { useQuery } from 'react-query'
 import { ErrorBoundary } from 'react-error-boundary'
 
 interface CoinData {
@@ -12,7 +13,7 @@ interface CoinData {
 }
 
 interface MarketSummaryProps {
-  data: CoinData[]
+  data: CoinData[]| null
 }
 
 const LoadingSkeleton = memo(() => (

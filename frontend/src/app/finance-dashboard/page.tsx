@@ -1,21 +1,30 @@
 "use client"
 
+import React from "react"
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import MarketSummary from "@/components/MarketSummary"
-import TradingViewChart from "@/components/TradingViewChart"
-import TechnicalAnalysis from "@/components/TechnicalAnalysis"
-import TopCoins from "@/components/TopCoins"
-import SearchResults from "@/components/SearchResults"
-import { getCryptoData } from "@/services/api"
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
+import { Input } from "../../components/ui/input"
+import { Button } from "../../components/ui/button"
+import { Separator } from "../../components/ui/separator"
+import MarketSummary from "../../components/MarketSummary"
+import TradingViewChart from "../../components/TradingViewChart"
+import TechnicalAnalysis from "../../components/TechnicalAnalysis"
+import TopCoins from "../../components/TopCoins"
+import SearchResults from "../../components/SearchResults"
+import { getCryptoData } from "../../services/api"
 import crypto from "crypto" // Import crypto for user verification
+import {Navbar} from "../../components/Navbar"
+import {Footer} from "../../components/Footer"
+import {Loader} from "../../components/Loader"
 
 interface Coin {
-  name: string
-  symbol: string
+  // name: string
+  // symbol: string
+
+  id: string  // name 
+  symbol: string // sym,bol
+  current_price: number
+  price_change_percentage_24h: number
   // Add other properties as needed
 }
 
@@ -77,7 +86,7 @@ export default function Dashboard() {
     }
     const filtered = marketData?.filter(
       (coin) =>
-        coin.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        coin.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
         coin.symbol.toLowerCase().includes(searchQuery.toLowerCase()),
     )
     setFilteredData(filtered || null)
@@ -99,11 +108,13 @@ export default function Dashboard() {
   }
 
   if (loading) {
-    return <div>Loading...</div>
+    <Loader/>
   }
 
   return (
     <div className="min-h-screen bg-white text-gray-800 p-4">
+      <Navbar/>
+      <br /><br/>
       {/* Chatbot container */}
       <div
         id="chatbot-container"
@@ -167,6 +178,8 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      <Footer/>
     </div>
   )
 }

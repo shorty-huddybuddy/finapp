@@ -1,4 +1,7 @@
 import { Chatbot } from "@/components/Chatbot";
+"use client"
+import React from "react"
+import { useAuth } from "@clerk/nextjs"
 
 export default function ExamplePage() {
     return (
