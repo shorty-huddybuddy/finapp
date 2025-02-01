@@ -6,8 +6,14 @@ import { Chart } from "chart.js/auto";
 import React from "react"
 
 const PredictionChart = () => {
-  const chartRef = useRef(null); // Reference for the chart instance
-  const [chartData, setChartData] = useState(null); // State to store API data
+  const chartRef = useRef<HTMLCanvasElement>(null); // Reference for the chart instance
+  interface ChartData {
+    linear_regression: { Date: string; Prediction: number }[];
+    lstm: { Prediction: number[] }[];
+    gru: { Prediction: number[] }[];
+  }
+
+  const [chartData, setChartData] = useState<ChartData | null>(null); // State to store API data
 
   // Fetch data from the API
   useEffect(() => {
