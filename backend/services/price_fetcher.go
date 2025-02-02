@@ -65,10 +65,13 @@ func (f *RealTimePriceFetcher) GetCurrentPrice(ticker string, assetType string) 
 			if err != nil {
 				return 0, err
 			}
-			
-			return extractMarketPrice(body)
 
+			usd_price,err := extractMarketPrice(body)
+			usd_price = usd_price/86
+			
+			return usd_price,err
 		}
+		
 		return price, nil
 	case "crypto":
 		price, err := f.fetchCryptoPrice(ticker)
