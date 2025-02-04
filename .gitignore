@@ -5,6 +5,14 @@
 frontend/.env*
 backend/.env*
 backend/api_key.json
+recommendations_model/api_key.json
+recommendations_model/__pycache__/*
+recommendations_model/__pycache__
+recommendations_model/_pycache_/
+
+# Virtual environment directories
+recommendations_model/venv/
+recommendations_model/__pycache__/
 
 # Dependencies
 node_modules/
@@ -63,4 +71,7 @@ yarn-error.log*
 *.log
 *.tmp
 *.temp
+
+
+
 
