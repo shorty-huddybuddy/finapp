@@ -1,5 +1,5 @@
-import { Chatbot } from "@/components/Chatbot";
 "use client"
+import { Chatbot } from "@/components/Chatbot";
 import React from "react"
 import { useAuth } from "@clerk/nextjs"
 

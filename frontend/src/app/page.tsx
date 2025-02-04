@@ -5,8 +5,8 @@ import { Chatbot } from "../components/Chatbot";
 import { MarketWidgets } from "../components/MarketWidgets";
 import {Footer} from "../components/Footer";
 import {Testimonails} from "../components/Testimonails";
-import {Features} from "../components/Features";
-import "bootstrap/dist/css/bootstrap.min.css"; // Import Bootstrap CSS
+import {Features} from "@/components/features_1";
+import "bootstrap/dist/css/bootstrap.min.css";
 import { Header } from "../components/Header";
 import { Navbar } from "../components/Navbar";
 
