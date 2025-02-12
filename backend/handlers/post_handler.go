@@ -4,6 +4,7 @@ import (
 	"backend/database"
 	"backend/models"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -72,22 +73,42 @@ func (h *PostHandler) GetPost(c *fiber.Ctx) error {
 	return c.JSON(post)
 }
 
-// Update GetAllPosts to use Realtime Database
+// Update GetAllPosts to use Realtime Database with pagination
 func (h *PostHandler) GetAllPosts(c *fiber.Ctx) error {
-	ref := database.GetFirebaseDB().NewRef("posts")
-	var posts map[string]models.Post
+	limit, _ := strconv.Atoi(c.Query("limit", "10"))
+	lastId := c.Query("lastId")
+	userID := c.Locals("userId")
 
-	if err := ref.Get(c.Context(), &posts); err != nil {
+	// Get reference to posts in Realtime Database
+	ref := database.GetFirebaseDB().NewRef("posts")
+
+	// Create query
+	query := ref.OrderByKey()
+	if lastId != "" {
+		// For Realtime Database, use StartAt for pagination
+		query = query.StartAt(lastId)
+	}
+	query = query.LimitToFirst(limit)
+
+	fmt.Printf("Fetching posts with limit: %d, lastId: %s\n", limit, lastId)
+
+	var posts map[string]models.Post
+	if err := query.Get(c.Context(), &posts); err != nil {
+		fmt.Printf("Error fetching posts: %v\n", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to fetch posts",
 		})
 	}
 
-	// Convert map to slice
+	// Convert map to slice and filter premium posts
 	postsList := make([]models.Post, 0, len(posts))
-	for _, post := range posts {
-		postsList = append(postsList, post)
+	for id, post := range posts {
+		post.ID = id // Ensure ID is set
+		if !post.IsPremiumPost || userID != nil {
+			postsList = append(postsList, post)
+		}
 	}
 
+	fmt.Printf("Fetched %d posts\n", len(postsList))
 	return c.JSON(postsList)
 }

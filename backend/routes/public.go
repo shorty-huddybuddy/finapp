@@ -8,25 +8,26 @@ import (
 )
 
 func RegisterRoutes(app *fiber.App) {
-	// Public routes
+	// Public routes (no authentication required)
 	app.Get("/", handlers.PublicHandler)
 	app.Get("/api/test/firebase", handlers.TestDatabaseConnection)
 
-	// Protected routes
-	protected := app.Group("/api")
-	protected.Use(middleware.AuthMiddleware())
-
-	// Social routes
-	social := protected.Group("/social")
+	// Protected Social Media Routes
+	social := app.Group("/api/social")
+	social.Use(middleware.AuthMiddleware()) // Apply auth middleware to all social routes
 	social.Post("/posts", handlers.NewPostHandler().CreatePost)
 	social.Get("/posts/:id", handlers.NewPostHandler().GetPost)
 	social.Get("/posts", handlers.NewPostHandler().GetAllPosts)
 
-	// Other protected routes
-	protected.Get("/watchlist", handlers.WatchlistHandler)
-	protected.Get("/search", handlers.SearchHandler)
-	protected.Get("/price", handlers.PriceHandler)
+	// Protected route (requires authentication)
+	app.Get("/protected", handlers.ProtectedHandler)
 
 	// Chatbot route
 	app.Post("/generate", handlers.ChatbotHandler)
+
+	// Watchlist routes
+	app.All("/api/watchlist", handlers.WatchlistHandler)
+
+	app.Get("/api/search", handlers.SearchHandler)
+	app.Get("/api/price", handlers.PriceHandler)
 }
