@@ -62,7 +62,7 @@ export function SearchHeader() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,  // Add authorization header
+          'Authorization': `Bearer ${token}`,  
         },
         body: JSON.stringify(postData)
       });
