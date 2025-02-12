@@ -19,20 +19,22 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-        <div className="flex min-h-screen bg-background">
-          <div className="fixed left-0 top-0 bottom-0">
-            <Sidebar />
-          </div>
-          <main className="flex-1 ml-64 mr-80">
-            <div className="fixed top-0 left-64 right-80 z-20 bg-background">
-              <SearchHeader />
-            </div>
-            <div className="pt-32">{children}</div>
-          </main>
-          <div className="fixed right-0 top-0 bottom-0">
-            <RightSidebar />
-          </div>
+    <div className="flex min-h-screen bg-background">
+      <div className="fixed left-0 top-0 bottom-0">
+        <Sidebar />
+      </div>
+      <main className="flex-1 ml-16 md:ml-64 mr-0 lg:mr-80">
+        <div className="mb-4">
+          <SearchHeader />
         </div>
+        <div className="px-4">
+          {children}
+        </div>
+      </main>
+      <div className="fixed right-0 top-0 bottom-0">
+        <RightSidebar />
+      </div>
+    </div>
   )
 }
 
