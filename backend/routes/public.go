@@ -2,7 +2,7 @@ package routes
 
 import (
 	"backend/handlers"
-	"backend/middleware"
+	// "backend/middleware"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -14,7 +14,7 @@ func RegisterRoutes(app *fiber.App) {
 
 	// Protected Social Media Routes
 	social := app.Group("/api/social")
-	social.Use(middleware.AuthMiddleware()) // Apply auth middleware to all social routes
+	// social.Use(middleware.AuthMiddleware()) // Apply auth middleware to all social routes
 	social.Post("/posts", handlers.NewPostHandler().CreatePost)
 	social.Get("/posts/:id", handlers.NewPostHandler().GetPost)
 	social.Get("/posts", handlers.NewPostHandler().GetAllPosts)
