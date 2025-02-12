@@ -1,50 +1,3 @@
-// package chatbot
-
-// import (
-// 	"fin_recomend/gemini"
-// 	"fin_recomend/portfolio"
-// 	"fmt"
-// 	"os"
-// 	"strings"
-// )
-
-// type RequestBody struct {
-// 	Username   string `json:"username"`
-// 	Balance    int    `json:"balance"`
-// 	Experience string `json:"experience"`
-// 	Preference string `json:"preference"`
-// 	Stock      string `json:"stock"`
-// }
-
-// func GenerateResponse(req RequestBody) (string, error) {
-// 	// Simulate fetching a user's portfolio
-// 	userPortfolio := portfolio.Portfolio{
-// 		Balance:    req.Balance, // Example
-// 		Experience: req.Experience,
-// 		Preference: req.Preference,
-// 		Stock:      req.Stock,
-// 	}
-
-// 	// fmt.Println("User's portfolio:", userPortfolio)
-
-// 	// Load prompt template
-// 	promptBytes, err := os.ReadFile("prompt.txt")
-// 	if err != nil {
-// 		return "", fmt.Errorf("failed to load prompt template: %v", err)
-// 	}
-
-// 	// Fill prompt template with user's data
-
-// 	prompt := strings.ReplaceAll(string(promptBytes), "{balance}", fmt.Sprintf("%.2f", userPortfolio.Balance))
-// 	prompt = strings.ReplaceAll(prompt, "{experience}", userPortfolio.Experience)
-// 	prompt = strings.ReplaceAll(prompt, "{preference}", userPortfolio.Preference)
-// 	prompt = strings.ReplaceAll(prompt, "{stock}", req.Stock)
-
-// 	// Send the filled prompt to Gemini
-// 	return gemini.QueryGemini(prompt)
-
-// }
-
 package chatbot
 
 import (
@@ -62,6 +15,7 @@ type RequestBody struct {
 	Liquidity             string `json:"liquidity"`
 	RiskBearing           string  `json:"risk_bearing"`
 	MinimumFreezingPeriod int     `json:"minimum_freezing_period"`
+	QueryType             string  `json:"query_type"`
 }
 
 func GenerateResponse(req RequestBody) (string, error) {
@@ -91,4 +45,21 @@ func GenerateResponse(req RequestBody) (string, error) {
 
 	// Send the filled prompt to Gemini
 	return gemini.QueryGemini(prompt)
+}
+
+func Analyze_Portfolio(req map[string]interface{}) (string,error) {
+	
+	prompt, err := os.ReadFile("analyze_prompt.txt")
+	if err != nil {
+		return "", fmt.Errorf("failed to load prompt template: %v", err)
+	}
+	fmt.Println(req)
+	prompt = append(prompt, []byte(fmt.Sprintf("%+v", req))...)
+
+	response,err :=  gemini.QueryGemini(string(prompt))
+	fmt.Println(response)
+
+	return response,err
+
+
 }
