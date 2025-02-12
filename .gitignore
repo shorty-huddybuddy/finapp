@@ -6,13 +6,13 @@ frontend/.env*
 backend/.env*
 backend/api_key.json
 recommendations_model/api_key.json
-recommendations_model/__pycache__/*
-recommendations_model/__pycache__
-recommendations_model/_pycache_/
+recommendations_model/_pycache_/*
+recommendations_model/_pycache_
+recommendations_model/pycache/
 
 # Virtual environment directories
 recommendations_model/venv/
-recommendations_model/__pycache__/
+recommendations_model/_pycache_/
 
 # Dependencies
 node_modules/
@@ -61,17 +61,13 @@ yarn-error.log*
 .eslintcache
 
 # Optional: PWA files
-**/public/precache.*.*.js
+*/public/precache..*.js
 **/public/sw.js
-**/public/workbox-*.js
-**/public/worker-*.js
-**/public/fallback-*.js
+*/public/workbox-.js
+*/public/worker-.js
+*/public/fallback-.js
 
 # Temporary files
 *.log
 *.tmp
 *.temp
-
-
-
-
