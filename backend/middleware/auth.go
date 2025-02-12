@@ -1,37 +1,54 @@
 package middleware
 
 import (
-	"github.com/clerk/clerk-sdk-go/v2"
+	"fmt"
+	"strings"
+
+	"github.com/clerk/clerk-sdk-go/v2/jwt"
 	"github.com/clerk/clerk-sdk-go/v2/user"
 	"github.com/gofiber/fiber/v2"
 )
 
 func AuthMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// Get session claims from context
-		claims, ok := clerk.SessionClaimsFromContext(c.Context())
-		if !ok {
+		// Get the session JWT from the Authorization header
+		sessionToken := strings.TrimPrefix(c.Get("Authorization"), "Bearer ")
+		if sessionToken == "" {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "Unauthorized: No valid session",
+				"error": "No token provided",
 			})
 		}
 
-		// Get user details
+		// Verify the session token
+		claims, err := jwt.Verify(c.Context(), &jwt.VerifyParams{
+			Token: sessionToken,
+		})
+		if err != nil {
+			fmt.Printf("Token verification error: %v\n", err)
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error":   "Invalid token",
+				"details": err.Error(),
+			})
+		}
+
+		// Get user details and check if banned
 		usr, err := user.Get(c.Context(), claims.Subject)
-		if (err != nil) {
+		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": "Error fetching user details",
+				"error":   "Error fetching user details",
+				"details": err.Error(),
 			})
 		}
 
-		if usr == nil {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "User does not exist",
+		if usr.Banned {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+				"error": "User is banned",
 			})
 		}
 
 		// Store user info in context
 		c.Locals("userId", usr.ID)
+		c.Locals("banned", usr.Banned)
 		c.Locals("firstName", usr.FirstName)
 		c.Locals("lastName", usr.LastName)
 		if usr.Username != nil {
