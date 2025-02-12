@@ -7,6 +7,7 @@ import {
 } from '@clerk/nextjs'
 import './globals.css'
 import React from "react"
+import { Toaster } from "sonner"
 
 export default function RootLayout({
   children,
@@ -17,6 +18,7 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en">
         <body>
+          <Toaster position="top-center" />
           <SignedOut>
             <SignInButton />
           </SignedOut>

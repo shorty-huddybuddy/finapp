@@ -25,6 +25,8 @@ type WatchlistResponse struct {
 	TotalPortfolioValue  float64                    `json:"total_portfolio_value"`
 	TotalPNL             float64                    `json:"total_pnl"`
 	HoldingsDistribution map[string]float64         `json:"holdings_distribution"`
+	InvestmentByType     map[string]float64         `json:"investment_by_type"`    // New field
+	ProfitByAsset        map[string]AssetProfit     `json:"profit_by_asset"`       // New field
 }
 
 type WatchlistItemWithMetrics struct {
@@ -32,6 +34,13 @@ type WatchlistItemWithMetrics struct {
 	ID 		 string  `json:"id"`
 	CurrentPrice float64 `json:"current_price"`
 	PNL          float64 `json:"pnl"`
+}
+
+type AssetProfit struct {
+	Amount          float64 `json:"amount"`
+	PercentageGain  float64 `json:"percentage_gain"`
+	InvestedAmount  float64 `json:"invested_amount"`
+	CurrentValue    float64 `json:"current_value"`
 }
 
 func WatchlistHandler(c *fiber.Ctx) error {
@@ -130,6 +139,8 @@ func getWatchlist(c *fiber.Ctx) error {
 	var totalValue float64
 	var totalPNL float64
 	holdingsDistribution := make(map[string]float64)
+	investmentByType := make(map[string]float64)      // Track investment by asset type
+	profitByAsset := make(map[string]AssetProfit)     // Track profit metrics per asset
 
 	// First pass: Calculate total value and metrics
 	for itemiD, item := range items {
@@ -137,6 +148,22 @@ func getWatchlist(c *fiber.Ctx) error {
 		if err != nil {
 			fmt.Printf("Error fetching price for %s: %v\n", item.Ticker, err)
 			continue
+		}
+
+		initialInvestment := item.BuyPrice * item.Quantity
+		currentValue := currentPrice * item.Quantity
+		profitAmount := currentValue - initialInvestment
+		profitPercentage := (profitAmount / initialInvestment) * 100
+
+		// Update investment by type
+		investmentByType[item.Type] += initialInvestment
+
+		// Update profit metrics for this asset
+		profitByAsset[item.Ticker] = AssetProfit{
+			Amount:          profitAmount,
+			PercentageGain: profitPercentage,
+			InvestedAmount: initialInvestment,
+			CurrentValue:   currentValue,
 		}
 
 		itemValue := currentPrice * item.Quantity
@@ -168,6 +195,8 @@ func getWatchlist(c *fiber.Ctx) error {
 		TotalPortfolioValue:  totalValue,
 		TotalPNL:             totalPNL,
 		HoldingsDistribution: holdingsDistribution,
+		InvestmentByType:     investmentByType,
+		ProfitByAsset:        profitByAsset,
 	}
 	fmt.Println("Response", response)
 	return c.JSON(response)
