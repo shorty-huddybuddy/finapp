@@ -185,7 +185,7 @@ export default function Dashboard() {
       const response = await fetch(`http://127.0.0.1:8080/api/price?ticker=${ticker}&category=${type}`);
       const data = await response.json();
       
-      if (data.price === -1) {
+      if (data.price <= 0) {
         setIsTickerValid(false);
         toast.error('Invalid ticker symbol');
         return false;

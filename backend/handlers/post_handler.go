@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"cloud.google.com/go/firestore"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
@@ -18,37 +17,12 @@ func NewPostHandler() *PostHandler {
 }
 
 func (h *PostHandler) CreatePost(c *fiber.Ctx) error {
-	// Get authenticated user info
-	userId := c.Locals("userId").(string)
-	username := c.Locals("username").(string)
-
-	// Log raw request body for debugging
-	fmt.Println("Raw request body:", string(c.Body()))
-	fmt.Println("Authenticated user:", userId, username)
-
 	post := new(models.Post)
+
 	if err := c.BodyParser(post); err != nil {
 		fmt.Printf("Body parsing error: %v\n", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body: " + err.Error(),
-		})
-	}
-
-	// Debug log parsed post
-	fmt.Printf("Parsed post: %+v\n", post)
-	fmt.Printf("Author details: %+v\n", post.Author)
-
-	// Validate required fields
-	if post.Content == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Content is required",
-		})
-	}
-
-	// Ensure Author fields are properly set
-	if post.Author.Name == "" || post.Author.Handle == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Author name and handle are required",
 		})
 	}
 
@@ -62,53 +36,58 @@ func (h *PostHandler) CreatePost(c *fiber.Ctx) error {
 	post.Comments = 0
 	post.Shares = 0
 
-	// Debug log final post before saving
-	fmt.Printf("Final post to save: %+v\n", post)
+	// Create reference to posts collection in Firebase Realtime Database
+	ref := database.GetFirebaseDB().NewRef("posts")
 
-	// Save to Firestore
-	_, err := database.Posts().Doc(post.ID).Set(c.Context(), post)
+	// Generate a new unique key for the post
+	newRef, err := ref.Push(c.Context(), post)
 	if err != nil {
-		fmt.Printf("Firestore error: %v\n", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to save post: " + err.Error(),
+			"error": "Failed to store post data: " + err.Error(),
 		})
 	}
 
+	// Update the post ID with the Firebase generated key
+	post.ID = newRef.Key
+
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"status":  "success",
 		"message": "Post created successfully",
+		"post_id": newRef.Key,
 		"data":    post,
 	})
 }
 
+// Update GetPost to use Realtime Database
 func (h *PostHandler) GetPost(c *fiber.Ctx) error {
 	id := c.Params("id")
-	doc, err := database.Posts().Doc(id).Get(c.Context())
-	if err != nil {
+	var post models.Post
+
+	ref := database.GetFirebaseDB().NewRef(fmt.Sprintf("posts/%s", id))
+	if err := ref.Get(c.Context(), &post); err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "Post not found",
 		})
 	}
 
-	var post models.Post
-	doc.DataTo(&post)
 	return c.JSON(post)
 }
 
+// Update GetAllPosts to use Realtime Database
 func (h *PostHandler) GetAllPosts(c *fiber.Ctx) error {
-	iter := database.Posts().OrderBy("CreatedAt", firestore.Desc).Limit(20).Documents(c.Context())
-	var posts []models.Post
+	ref := database.GetFirebaseDB().NewRef("posts")
+	var posts map[string]models.Post
 
-	for {
-		doc, err := iter.Next()
-		if err != nil {
-			break
-		}
-
-		var post models.Post
-		doc.DataTo(&post)
-		posts = append(posts, post)
+	if err := ref.Get(c.Context(), &posts); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to fetch posts",
+		})
 	}
 
-	return c.JSON(posts)
+	// Convert map to slice
+	postsList := make([]models.Post, 0, len(posts))
+	for _, post := range posts {
+		postsList = append(postsList, post)
+	}
+
+	return c.JSON(postsList)
 }
