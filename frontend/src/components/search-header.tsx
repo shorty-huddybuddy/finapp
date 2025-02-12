@@ -8,7 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import data from '@emoji-mart/data'
 import Picker from '@emoji-mart/react'
 import { usePostForm } from "@/hooks/usePostForm"
-import { useUser } from "@clerk/nextjs"
+import { useUser, useAuth } from "@clerk/nextjs"  // Add this import
 
 interface ErrorResponse {
   error: string;
@@ -16,6 +16,7 @@ interface ErrorResponse {
 
 export function SearchHeader() {
   const { user } = useUser()
+  const { getToken } = useAuth()  // Add this hook
   const {
     content,
     setContent,
@@ -38,6 +39,12 @@ export function SearchHeader() {
     try {
       setIsLoading(true);
       
+      // Get the token
+      const token = await getToken();
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+      
       const postData = {
         author: {
           name: user.fullName || "",
@@ -55,6 +62,7 @@ export function SearchHeader() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,  // Add authorization header
         },
         body: JSON.stringify(postData)
       });
