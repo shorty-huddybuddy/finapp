@@ -7,6 +7,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+
+
 func RegisterRoutes(app *fiber.App) {
 	// Public routes (no authentication required)
 	app.Get("/", handlers.PublicHandler)
@@ -23,6 +25,7 @@ func RegisterRoutes(app *fiber.App) {
 	// Like routes
 	social.Post("/posts/:postId/like", handlers.NewLikeHandler().ToggleLike)
 	social.Get("/posts/:postId/like/status", handlers.NewLikeHandler().GetLikeStatus)
+
 
 	// Comment routes
 	social.Post("/posts/:postId/comments", handlers.NewCommentHandler().CreateComment)

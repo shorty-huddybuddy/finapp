@@ -1,3 +1,5 @@
+"use client"
+
 import dayjs from "dayjs";
 import React, { useState } from "react";
 var isBetween = require("dayjs/plugin/isBetween");
@@ -41,9 +43,9 @@ const Calendar = () => {
     // create calendar content
     const content = arr.map((item, index) => {
         return (
-            <div key={index} className="md:px-2 md:py-2 p-[2px] cursor-pointer max-w-[20px] md:mb-4 flex md:w-full justify-center"></div>
+            <div key={index} className="md:px-2 md:py-2 p-[2px] cursor-pointer max-w-[20px] md:mb-4 flex md:w-full justify-center">
                 <div className="rounded w-[50px] h-[50px] flex flex-col md:gap-2 items-center justify-center bg-white">
-                    <p className="text-lg font-semibold text-black rounded-circle flex items-center justify-center w-[30px] h-[30px]"></p>
+                    <p className="text-lg font-semibold text-black rounded-circle flex items-center justify-center w-[30px] h-[30px]">
                         {item.getDate()}
                     </p>
                 </div>
@@ -88,7 +90,7 @@ const Calendar = () => {
     return (
         <div className="flex items-center justify-center py-3 px-2 md:py-8 md:px-4">
             <div className="max-w-[80%] min-h-[75vh] md:max-w-[90%] w-full shadow-2xl border-[1.6px] rounded-2xl border-gray-500">
-                <div className="md:py-12 md:px-5 py-4 px-2 flex flex-col rounded-2xl min-h-[75vh] bg-slate-100"></div>
+                <div className="md:py-12 md:px-5 py-4 px-2 flex flex-col rounded-2xl min-h-[75vh] bg-slate-100">
                     <div className="px-4 md:px-8 flex flex-wrap items-center justify-between">
                         <span className="text-base font-bold text-gray-800">
                             {monthNames[today.month-1]} - {today.year}
@@ -120,7 +122,7 @@ const Calendar = () => {
                         </div>
                     </div>
 
-                    <div className="grid items-center grid-cols-7 max-w-full justify-between pt-12 overflow-x-auto"></div>
+                    <div className="grid items-center grid-cols-7 max-w-full justify-between pt-12 overflow-x-auto">
                         {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
                             <div key={day} className="w-[30px] md:w-full mb-3 flex justify-center">
                                 <p className="text-lg text-center text-gray-800 font-semibold">
