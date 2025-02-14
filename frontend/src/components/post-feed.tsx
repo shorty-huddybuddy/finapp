@@ -188,11 +188,12 @@ export function PostFeed() {
       try {
         const updatedPosts = await Promise.all(
           posts.map(async (post) => {
-            const response = await fetch(`http://localhost:8080/api/social/posts/${post.id}/like`, {
+            const response = await fetch(`http://localhost:8080/api/social/posts/${post.id}/like/status`, {
               headers: {
                 'Authorization': `Bearer ${token}`,
               }
             });
+            
             
             if (response.ok) {
               const { liked } = await response.json();

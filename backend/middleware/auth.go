@@ -53,6 +53,10 @@ func AuthMiddleware() fiber.Handler {
 		c.Locals("banned", usr.Banned)
 		c.Locals("firstName", usr.FirstName)
 		c.Locals("lastName", usr.LastName)
+		
+		// fmt.Println(usr)
+		c.Locals("userImage",usr.ImageURL)
+
 		if usr.Username != nil {
 			c.Locals("username", *usr.Username)
 		}
