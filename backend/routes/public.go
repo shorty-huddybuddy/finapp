@@ -18,8 +18,9 @@ func RegisterRoutes(app *fiber.App) {
 	social.Post("/posts", handlers.NewPostHandler().CreatePost)
 	social.Get("/posts/:id", handlers.NewPostHandler().GetPost)
 	social.Get("/posts", handlers.NewPostHandler().GetAllPosts)
+	social.Delete("/posts/:id", handlers.NewPostHandler().DeletePost) // Add delete route
 	social.Post("/posts/:postId/like", handlers.NewLikeHandler().ToggleLike)
-	social.Get("/posts/:postId/like", handlers.NewLikeHandler().CheckLikeStatus)
+	social.Get("/posts/:postId/like/status", handlers.NewLikeHandler().GetLikeStatus)
 
 	// Add like routes
 	social.Post("/posts/:postId/like", handlers.NewLikeHandler().ToggleLike)          // Toggle like

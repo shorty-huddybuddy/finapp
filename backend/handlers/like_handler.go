@@ -72,19 +72,3 @@ func (h *LikeHandler) ToggleLike(c *fiber.Ctx) error {
 		"message": "Post liked",
 	})
 }
-
-func (h *LikeHandler) GetLikeStatus(c *fiber.Ctx) error {
-	postId := c.Params("postId")
-	userId := c.Locals("userId").(string)
-
-	likeRef := database.GetFirebaseDB().NewRef(fmt.Sprintf("likes/%s/%s", postId, userId))
-
-	var exists bool
-	if err := likeRef.Get(c.Context(), &exists); err != nil {
-		exists = false
-	}
-
-	return c.JSON(fiber.Map{
-		"liked": exists,
-	})
-}
