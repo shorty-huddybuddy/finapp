@@ -8,7 +8,7 @@ import { Heart, MessageCircle, Share, MoreHorizontal, Star } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useState, useRef, useCallback } from "react"
 import Image from "next/image"
-import { useAuth } from "@clerk/nextjs"
+import { useAuth, useUser } from "@clerk/nextjs"
 import { Spinner } from "@/components/ui/spinner"
 import { toast } from "sonner"  
 
@@ -39,6 +39,7 @@ export function PostFeed() {
   const [hasMore, setHasMore] = useState(true)
   const [lastPostId, setLastPostId] = useState<string | null>(null)
   const { getToken } = useAuth()
+  const { user } = useUser()
 
   const observer = useRef<IntersectionObserver | null>(null);
   
@@ -138,7 +139,11 @@ export function PostFeed() {
       // Optimistically update UI
       setPosts(posts.map(post => 
         post.id === postId 
-          ? { ...post, likes: post.likes + 1 } 
+          ? { 
+              ...post, 
+              liked: !isCurrentlyLiked,
+              likes: isCurrentlyLiked ? post.likes - 1 : post.likes + 1 
+            } 
           : post
       ));
 
@@ -153,26 +158,22 @@ export function PostFeed() {
         // Revert optimistic update if failed
         setPosts(posts.map(post => 
           post.id === postId 
-            ? { ...post, likes: currentLikes } 
+            ? { 
+                ...post, 
+                liked: isCurrentlyLiked,
+                likes: currentLikes 
+              } 
             : post
         ));
-        throw new Error('Failed to toggle like');
+        throw new Error('Failed to update like');
       }
-
-      const data = await response.json();
-      // Update posts with actual server response if needed
-      setPosts(posts.map(post => 
-        post.id === postId 
-          ? { ...post, likes: data.liked ? currentLikes + 1 : currentLikes - 1 } 
-          : post
-      ));
 
       const data = await response.json();
       console.log(`Post ${postId} ${data.liked ? 'liked' : 'unliked'} successfully`);
 
     } catch (error) {
-      console.error('Error toggling like:', error);
-      toast.error('Failed to toggle like');
+      console.error('Error updating like:', error);
+      toast.error('Failed to update like');
     }
   };
 
@@ -209,6 +210,43 @@ export function PostFeed() {
 
     fetchLikeStatus();
   }, [posts.length, getToken]);
+
+  // Add delete handler
+  const handleDeletePost = async (postId: string, authorHandle: string) => {
+    try {
+      const token = await getToken();
+      if (!token) {
+        toast.error('Please login to delete posts');
+        return;
+      }
+
+      // Check if user is the author
+      const userHandle = `@${user?.username || user?.id}`
+      if (authorHandle !== userHandle) {
+        toast.error('You can only delete your own posts');
+        return;
+      }
+
+      const response = await fetch(`http://localhost:8080/api/social/posts/${postId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete post');
+      }
+
+      // Remove post from state
+      setPosts(posts.filter(post => post.id !== postId));
+      toast.success('Post deleted successfully');
+
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      toast.error('Failed to delete post');
+    }
+  };
 
   // Initial load
   useEffect(() => {
@@ -266,7 +304,18 @@ export function PostFeed() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem>Copy link</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigator.clipboard.writeText(`/posts/${post.id}`)}>
+                        Copy link
+                      </DropdownMenuItem>
+                      {/* Add delete option if user is author */}
+                      {user && `@${user.username || user.id}` === post.author.handle && (
+                        <DropdownMenuItem
+                          onClick={() => handleDeletePost(post.id, post.author.handle)}
+                          className="text-red-600 focus:text-red-600"
+                        >
+                          Delete post
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem>Report post</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
