@@ -60,21 +60,44 @@ export function PostFeed() {
         headers: {
           'Authorization': token ? `Bearer ${token}` : '',
         }
-      })
+      });
 
       if (!response.ok) {
         throw new Error('Failed to fetch posts')
       }
 
-      const newPosts = await response.json()
+      const fetchedPosts = await response.json()
       
-      if (newPosts.length < POSTS_PER_PAGE) {
+      // Fetch like status for each post
+      const postsWithLikeStatus = await Promise.all(
+        fetchedPosts.map(async (post: Post) => {
+          try {
+            const likeResponse = await fetch(
+              `http://localhost:8080/api/social/posts/${post.id}/like/status`,
+              {
+                headers: {
+                  'Authorization': token ? `Bearer ${token}` : '',
+                }
+              }
+            );
+            if (likeResponse.ok) {
+              const { liked } = await likeResponse.json();
+              return { ...post, liked };
+            }
+          } catch (error) {
+            console.error('Error fetching like status:', error);
+          }
+          return post;
+        })
+      );
+      
+      if (postsWithLikeStatus.length < POSTS_PER_PAGE) {
         setHasMore(false)
       }
       
-      if (newPosts.length > 0) {
-        setLastPostId(newPosts[newPosts.length - 1].id)
-        setPosts(prev => [...prev, ...newPosts])
+      if (postsWithLikeStatus.length > 0) {
+        setLastPostId(postsWithLikeStatus[postsWithLikeStatus.length - 1].id)
+        setPosts(prev => [...prev, ...postsWithLikeStatus])
       }
 
     } catch (err) {
@@ -104,26 +127,13 @@ export function PostFeed() {
     return `${post.id}-${index}`;
   };
 
-  const handleLike = async (postId: string, currentLikes: number) => {
+  const handleLike = async (postId: string, currentLikes: number, isCurrentlyLiked: boolean) => {
     try {
       const token = await getToken();
       if (!token) {
         toast.error('Please login to like posts');
         return;
       }
-
-      // Get current like status before toggling
-      const likeStatusResponse = await fetch(`http://localhost:8080/api/social/posts/${postId}/like`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        }
-      });
-
-      if (!likeStatusResponse.ok) {
-        throw new Error('Failed to get like status');
-      }
-
-      const { liked: isCurrentlyLiked } = await likeStatusResponse.json();
 
       // Optimistically update UI
       setPosts(posts.map(post => 
@@ -132,7 +142,6 @@ export function PostFeed() {
           : post
       ));
 
-      // Send like/unlike request
       const response = await fetch(`http://localhost:8080/api/social/posts/${postId}/like`, {
         method: 'POST',
         headers: {
@@ -147,12 +156,15 @@ export function PostFeed() {
             ? { ...post, liked: isCurrentlyLiked, likes: currentLikes } 
             : post
         ));
-        throw new Error('Failed to toggle like');
+        throw new Error('Failed to update like');
       }
 
+      const data = await response.json();
+      console.log(`Post ${postId} ${data.liked ? 'liked' : 'unliked'} successfully`);
+
     } catch (error) {
-      console.error('Error toggling like:', error);
-      toast.error('Failed to toggle like');
+      console.error('Error updating like:', error);
+      toast.error('Failed to update like');
     }
   };
 
@@ -272,10 +284,12 @@ export function PostFeed() {
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      className="hover:text-red-500"
-                      onClick={() => handleLike(post.id, post.likes)}
+                      className={`hover:text-red-500 ${post.liked ? 'text-red-500' : ''}`}
+                      onClick={() => handleLike(post.id, post.likes, post.liked)}
                     >
-                      <Heart className={post.liked ? "w-4 h-4 fill-red-500 text-red-500" : "w-4 h-4"} />
+                      <Heart 
+                        className={post.liked ? "w-4 h-4 fill-red-500 text-red-500" : "w-4 h-4"} 
+                      />
                       <span className="ml-2 text-xs">{post.likes}</span>
                     </Button>
                     <Button variant="ghost" size="icon">

@@ -4,6 +4,7 @@ import (
 	"backend/database"
 	"backend/models"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -70,20 +71,42 @@ func (h *PostHandler) GetPost(c *fiber.Ctx) error {
 
 // Update GetAllPosts to use Realtime Database
 func (h *PostHandler) GetAllPosts(c *fiber.Ctx) error {
-	fmt.Println("getting posts")
-	ref := database.GetFirebaseDB().NewRef("posts")
-	var posts map[string]models.Post
+	limit, _ := strconv.Atoi(c.Query("limit", "10"))
+	lastId := c.Query("lastId")
+	userId := c.Locals("userId")
 
-	if err := ref.Get(c.Context(), &posts); err != nil {
+	// Get reference to posts in Realtime Database
+	ref := database.GetFirebaseDB().NewRef("posts")
+	query := ref.OrderByKey()
+	if lastId != "" {
+		query = query.StartAt(lastId)
+	}
+	query = query.LimitToFirst(limit)
+
+	var posts map[string]models.Post
+	if err := query.Get(c.Context(), &posts); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to fetch posts",
 		})
 	}
 
-	// Convert map to slice
+	// Convert map to slice and add metadata
 	postsList := make([]models.Post, 0, len(posts))
-	for _, post := range posts {
-		postsList = append(postsList, post)
+	for id, post := range posts {
+		post.ID = id
+
+		// Check like status if user is authenticated
+		if userId != nil {
+			likeRef := database.GetFirebaseDB().NewRef(fmt.Sprintf("likes/%s/%s", id, userId))
+			var liked bool
+			if err := likeRef.Get(c.Context(), &liked); err == nil {
+				post.Liked = liked
+			}
+		}
+
+		if !post.IsPremiumPost || userId != nil {
+			postsList = append(postsList, post)
+		}
 	}
 
 	return c.JSON(postsList)
