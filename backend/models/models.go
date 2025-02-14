@@ -40,10 +40,9 @@ type Post struct {
 type Comment struct {
 	ID        string    `json:"id" firestore:"id"`
 	PostID    string    `json:"postId" firestore:"postId"`
-	AuthorID  string    `json:"authorId" firestore:"authorId"`
+	Author    Author    `json:"author" firestore:"author"`
 	Content   string    `json:"content" firestore:"content"`
 	CreatedAt time.Time `json:"createdAt" firestore:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt" firestore:"updatedAt"`
 }
 
 type Like struct {

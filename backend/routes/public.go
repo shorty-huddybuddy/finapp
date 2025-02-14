@@ -18,12 +18,16 @@ func RegisterRoutes(app *fiber.App) {
 	social.Post("/posts", handlers.NewPostHandler().CreatePost)
 	social.Get("/posts/:id", handlers.NewPostHandler().GetPost)
 	social.Get("/posts", handlers.NewPostHandler().GetAllPosts)
-	social.Delete("/posts/:id", handlers.NewPostHandler().DeletePost) // Add delete route
+	social.Delete("/posts/:id", handlers.NewPostHandler().DeletePost)
+
+	// Like routes
 	social.Post("/posts/:postId/like", handlers.NewLikeHandler().ToggleLike)
 	social.Get("/posts/:postId/like/status", handlers.NewLikeHandler().GetLikeStatus)
 
-	// Add like routes
-	social.Post("/posts/:postId/like", handlers.NewLikeHandler().ToggleLike)          // Toggle like
+	// Comment routes
+	social.Post("/posts/:postId/comments", handlers.NewCommentHandler().CreateComment)
+	social.Get("/posts/:postId/comments", handlers.NewCommentHandler().GetComments)
+	social.Delete("/posts/:postId/comments/:commentId", handlers.NewCommentHandler().DeleteComment)
 
 	// Protected route (requires authentication)
 	app.Get("/protected", handlers.ProtectedHandler)
