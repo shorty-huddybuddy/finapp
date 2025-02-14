@@ -34,6 +34,7 @@ type Post struct {
 	Timestamp     string    `json:"timestamp" firestore:"timestamp"`
 	CreatedAt     time.Time `json:"-" firestore:"createdAt"`
 	UpdatedAt     time.Time `json:"-" firestore:"updatedAt"`
+	Liked         bool      `json:"liked" firestore:"liked,omitempty"`
 }
 
 type Comment struct {
