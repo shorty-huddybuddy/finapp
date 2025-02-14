@@ -24,7 +24,6 @@ func RegisterRoutes(app *fiber.App) {
 
 	// Add like routes
 	social.Post("/posts/:postId/like", handlers.NewLikeHandler().ToggleLike)          // Toggle like
-	social.Get("/posts/:postId/like/status", handlers.NewLikeHandler().GetLikeStatus) // Get like status
 
 	// Protected route (requires authentication)
 	app.Get("/protected", handlers.ProtectedHandler)
