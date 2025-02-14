@@ -4,7 +4,6 @@ import (
 	"backend/database"
 	"backend/models"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -37,23 +36,19 @@ func (h *PostHandler) CreatePost(c *fiber.Ctx) error {
 	post.Comments = 0
 	post.Shares = 0
 
-	// Create reference to posts collection in Firebase Realtime Database
-	ref := database.GetFirebaseDB().NewRef("posts")
+	// Create reference to specific post ID in Firebase
+	ref := database.GetFirebaseDB().NewRef("posts").Child(post.ID)
 
-	// Generate a new unique key for the post
-	newRef, err := ref.Push(c.Context(), post)
-	if err != nil {
+	// Set the post data directly with its ID
+	if err := ref.Set(c.Context(), post); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to store post data: " + err.Error(),
 		})
 	}
 
-	// Update the post ID with the Firebase generated key
-	post.ID = newRef.Key
-
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"message": "Post created successfully",
-		"post_id": newRef.Key,
+		"post_id": post.ID,
 		"data":    post,
 	})
 }
@@ -73,42 +68,23 @@ func (h *PostHandler) GetPost(c *fiber.Ctx) error {
 	return c.JSON(post)
 }
 
-// Update GetAllPosts to use Realtime Database with pagination
+// Update GetAllPosts to use Realtime Database
 func (h *PostHandler) GetAllPosts(c *fiber.Ctx) error {
-	limit, _ := strconv.Atoi(c.Query("limit", "10"))
-	lastId := c.Query("lastId")
-	userID := c.Locals("userId")
-
-	// Get reference to posts in Realtime Database
+	fmt.Println("getting posts")
 	ref := database.GetFirebaseDB().NewRef("posts")
-
-	// Create query
-	query := ref.OrderByKey()
-	if lastId != "" {
-		// For Realtime Database, use StartAt for pagination
-		query = query.StartAt(lastId)
-	}
-	query = query.LimitToFirst(limit)
-
-	fmt.Printf("Fetching posts with limit: %d, lastId: %s\n", limit, lastId)
-
 	var posts map[string]models.Post
-	if err := query.Get(c.Context(), &posts); err != nil {
-		fmt.Printf("Error fetching posts: %v\n", err)
+
+	if err := ref.Get(c.Context(), &posts); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to fetch posts",
 		})
 	}
 
-	// Convert map to slice and filter premium posts
+	// Convert map to slice
 	postsList := make([]models.Post, 0, len(posts))
-	for id, post := range posts {
-		post.ID = id // Ensure ID is set
-		if !post.IsPremiumPost || userID != nil {
-			postsList = append(postsList, post)
-		}
+	for _, post := range posts {
+		postsList = append(postsList, post)
 	}
 
-	fmt.Printf("Fetched %d posts\n", len(postsList))
 	return c.JSON(postsList)
 }

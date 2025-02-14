@@ -18,6 +18,8 @@ func RegisterRoutes(app *fiber.App) {
 	social.Post("/posts", handlers.NewPostHandler().CreatePost)
 	social.Get("/posts/:id", handlers.NewPostHandler().GetPost)
 	social.Get("/posts", handlers.NewPostHandler().GetAllPosts)
+	social.Post("/posts/:postId/like", handlers.NewLikeHandler().ToggleLike)
+	social.Get("/posts/:postId/like", handlers.NewLikeHandler().CheckLikeStatus)
 
 	// Protected route (requires authentication)
 	app.Get("/protected", handlers.ProtectedHandler)

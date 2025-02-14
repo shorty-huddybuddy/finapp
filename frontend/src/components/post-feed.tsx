@@ -112,13 +112,27 @@ export function PostFeed() {
         return;
       }
 
+      // Get current like status before toggling
+      const likeStatusResponse = await fetch(`http://localhost:8080/api/social/posts/${postId}/like`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        }
+      });
+
+      if (!likeStatusResponse.ok) {
+        throw new Error('Failed to get like status');
+      }
+
+      const { liked: isCurrentlyLiked } = await likeStatusResponse.json();
+
       // Optimistically update UI
       setPosts(posts.map(post => 
         post.id === postId 
-          ? { ...post, likes: post.likes + 1 } 
+          ? { ...post, liked: !isCurrentlyLiked, likes: isCurrentlyLiked ? currentLikes - 1 : currentLikes + 1 } 
           : post
       ));
 
+      // Send like/unlike request
       const response = await fetch(`http://localhost:8080/api/social/posts/${postId}/like`, {
         method: 'POST',
         headers: {
@@ -130,25 +144,51 @@ export function PostFeed() {
         // Revert optimistic update if failed
         setPosts(posts.map(post => 
           post.id === postId 
-            ? { ...post, likes: currentLikes } 
+            ? { ...post, liked: isCurrentlyLiked, likes: currentLikes } 
             : post
         ));
-        throw new Error('Failed to like post');
+        throw new Error('Failed to toggle like');
       }
 
-      const data = await response.json();
-      // Update posts with actual server response if needed
-      setPosts(posts.map(post => 
-        post.id === postId 
-          ? { ...post, likes: data.liked ? currentLikes + 1 : currentLikes - 1 } 
-          : post
-      ));
-
     } catch (error) {
-      console.error('Error liking post:', error);
-      toast.error('Failed to like post');
+      console.error('Error toggling like:', error);
+      toast.error('Failed to toggle like');
     }
   };
+
+  // Add this effect to fetch initial like status for posts
+  useEffect(() => {
+    const fetchLikeStatus = async () => {
+      if (!posts.length) return;
+      
+      const token = await getToken();
+      if (!token) return;
+
+      try {
+        const updatedPosts = await Promise.all(
+          posts.map(async (post) => {
+            const response = await fetch(`http://localhost:8080/api/social/posts/${post.id}/like`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+              }
+            });
+            
+            if (response.ok) {
+              const { liked } = await response.json();
+              return { ...post, liked };
+            }
+            return post;
+          })
+        );
+
+        setPosts(updatedPosts);
+      } catch (error) {
+        console.error('Error fetching like status:', error);
+      }
+    };
+
+    fetchLikeStatus();
+  }, [posts.length, getToken]);
 
   // Initial load
   useEffect(() => {
