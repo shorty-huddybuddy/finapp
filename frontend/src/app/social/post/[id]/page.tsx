@@ -52,7 +52,6 @@ export default function PostDetailPage() {
   useEffect(() => {
     const fetchPostDetails = async () => {
       try {
-
         const token = await getToken()
         const res = await fetch(`http://localhost:8080/api/social/posts/${id}`, {
           headers: { 'Authorization': token ? `Bearer ${token}` : '' }
@@ -76,11 +75,9 @@ export default function PostDetailPage() {
       }
     }
     fetchPostDetails()
-    
   }, [id, getToken])
 
   const handleCommentSubmit = async () => {
-
     if(!commentText.trim() || !user) return;
 
     try {
