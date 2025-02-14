@@ -1,3 +1,4 @@
+"use client"
 import {
   ClerkProvider,
   SignInButton,
@@ -9,11 +10,14 @@ import './globals.css'
 import React from "react"
 import { Toaster } from "sonner"
 
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+ 
+
   return (
     <ClerkProvider>
       <html lang="en">
@@ -24,6 +28,7 @@ export default function RootLayout({
           </SignedOut>
           <SignedIn>
             <UserButton />
+            
           </SignedIn>
           {children}
         </body>

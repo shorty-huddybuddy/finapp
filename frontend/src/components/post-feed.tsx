@@ -11,7 +11,7 @@ import Image from "next/image"
 import { useAuth, useUser } from "@clerk/nextjs"
 import { Spinner } from "@/components/ui/spinner"
 import { toast } from "sonner"  
-
+import { useRouter } from 'next/navigation'
 type Post = {
   id: string
   author: {
@@ -40,9 +40,8 @@ export function PostFeed() {
   const [lastPostId, setLastPostId] = useState<string | null>(null)
   const { getToken } = useAuth()
   const { user } = useUser()
-
   const observer = useRef<IntersectionObserver | null>(null);
-  
+  const router  = useRouter();
   // Move fetchPosts before it's used
   const fetchPosts = useCallback(async () => {
     if (loading || !hasMore) return;
@@ -128,7 +127,8 @@ export function PostFeed() {
     return `${post.id}-${index}`;
   };
 
-  const handleLike = async (postId: string, currentLikes: number, isCurrentlyLiked: boolean) => {
+  const handleLike = async (e: React.MouseEvent, postId: string, currentLikes: number, isCurrentlyLiked: boolean) => {
+    e.stopPropagation(); // Add this to prevent navigation
     try {
       const token = await getToken();
       if (!token) {
@@ -272,11 +272,10 @@ export function PostFeed() {
         <>
           {posts.map((post, index) => (
             <div
-              // Use the unique key function here
               key={getUniqueKey(post, index)}
               ref={index === posts.length - 1 ? lastPostElementRef : undefined}
             >
-              <Card className="border-border">
+              <Card className="border-border hover:border-blue-500 transition-colors cursor-pointer" onClick={() => router.push(`/social/post/${post.id}`)}>
                 <CardHeader className="flex flex-row items-center space-y-0 gap-3">
                   <Avatar>
                     <AvatarImage src={post.author.avatar} />
@@ -284,9 +283,12 @@ export function PostFeed() {
                   </Avatar>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <Link href={`/profile/${post.author.handle}`} className="font-semibold hover:underline">
-                        {post.author.name}
-                      </Link>
+                      {/* Stop propagation to prevent triggering the card click */}
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <Link href={`/profile/${post.author.handle}`} className="font-semibold hover:underline">
+                          {post.author.name}
+                        </Link>
+                      </div>
                       {post.author.isPremium && (
                         <Badge variant="secondary">
                           <Star className="w-3 h-3 mr-1" />
@@ -297,28 +299,31 @@ export function PostFeed() {
                     </div>
                     <p className="text-sm text-muted-foreground">{post.author.handle}</p>
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => navigator.clipboard.writeText(`/posts/${post.id}`)}>
-                        Copy link
-                      </DropdownMenuItem>
-                      {/* Add delete option if user is author */}
-                      {user && `@${user.username || user.id}` === post.author.handle && (
-                        <DropdownMenuItem
-                          onClick={() => handleDeletePost(post.id, post.author.handle)}
-                          className="text-red-600 focus:text-red-600"
-                        >
-                          Delete post
+                  {/* Stop propagation for dropdown menu */}
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => navigator.clipboard.writeText(`/posts/${post.id}`)}>
+                          Copy link
                         </DropdownMenuItem>
-                      )}
-                      <DropdownMenuItem>Report post</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                        {/* Add delete option if user is author */}
+                        {user && `@${user.username || user.id}` === post.author.handle && (
+                          <DropdownMenuItem
+                            onClick={() => handleDeletePost(post.id, post.author.handle)}
+                            className="text-red-600 focus:text-red-600"
+                          >
+                            Delete post
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem>Report post</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <p className="text-sm whitespace-pre-line">{post.content}</p>
@@ -336,24 +341,25 @@ export function PostFeed() {
                     </div>
                   )}
                 </CardContent>
-                <CardFooter>
+                <CardFooter onClick={(e) => e.stopPropagation()}> {/* Stop propagation for all footer actions */}
                   <div className="flex items-center gap-4 text-muted-foreground">
                     <Button 
                       variant="ghost" 
                       size="icon" 
                       className={`hover:text-red-500 ${post.liked ? 'text-red-500' : ''}`}
-                      onClick={() => handleLike(post.id, post.likes, post.liked)}
+                      onClick={(e) => handleLike(e, post.id, post.likes, post.liked)}
                     >
                       <Heart 
                         className={post.liked ? "w-4 h-4 fill-red-500 text-red-500" : "w-4 h-4"} 
                       />
                       <span className="ml-2 text-xs">{post.likes}</span>
                     </Button>
-                    <Button variant="ghost" size="icon">
+                    {/* Stop propagation for other buttons too */}
+                    <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
                       <MessageCircle className="w-4 h-4" />
                       <span className="ml-2 text-xs">{post.comments}</span>
                     </Button>
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
                       <Share className="w-4 h-4" />
                       <span className="ml-2 text-xs">{post.shares}</span>
                     </Button>
