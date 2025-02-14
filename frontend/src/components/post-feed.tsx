@@ -138,7 +138,7 @@ export function PostFeed() {
       // Optimistically update UI
       setPosts(posts.map(post => 
         post.id === postId 
-          ? { ...post, liked: !isCurrentlyLiked, likes: isCurrentlyLiked ? currentLikes - 1 : currentLikes + 1 } 
+          ? { ...post, likes: post.likes + 1 } 
           : post
       ));
 
@@ -153,18 +153,26 @@ export function PostFeed() {
         // Revert optimistic update if failed
         setPosts(posts.map(post => 
           post.id === postId 
-            ? { ...post, liked: isCurrentlyLiked, likes: currentLikes } 
+            ? { ...post, likes: currentLikes } 
             : post
         ));
-        throw new Error('Failed to update like');
+        throw new Error('Failed to toggle like');
       }
+
+      const data = await response.json();
+      // Update posts with actual server response if needed
+      setPosts(posts.map(post => 
+        post.id === postId 
+          ? { ...post, likes: data.liked ? currentLikes + 1 : currentLikes - 1 } 
+          : post
+      ));
 
       const data = await response.json();
       console.log(`Post ${postId} ${data.liked ? 'liked' : 'unliked'} successfully`);
 
     } catch (error) {
-      console.error('Error updating like:', error);
-      toast.error('Failed to update like');
+      console.error('Error toggling like:', error);
+      toast.error('Failed to toggle like');
     }
   };
 

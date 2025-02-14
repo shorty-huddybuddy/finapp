@@ -4,15 +4,16 @@ import (
 	"backend/database"
 	"backend/models"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
 
+// PostHandler handles social posts operations.
 type PostHandler struct{}
 
+// NewPostHandler returns a new PostHandler.
 func NewPostHandler() *PostHandler {
 	return &PostHandler{}
 }
@@ -54,7 +55,7 @@ func (h *PostHandler) CreatePost(c *fiber.Ctx) error {
 	})
 }
 
-// Update GetPost to use Realtime Database
+// GetPost returns a single post.
 func (h *PostHandler) GetPost(c *fiber.Ctx) error {
 	id := c.Params("id")
 	var post models.Post
@@ -69,7 +70,7 @@ func (h *PostHandler) GetPost(c *fiber.Ctx) error {
 	return c.JSON(post)
 }
 
-// Update GetAllPosts to use Realtime Database
+// GetAllPosts returns a list of posts.
 func (h *PostHandler) GetAllPosts(c *fiber.Ctx) error {
 	limit, _ := strconv.Atoi(c.Query("limit", "10"))
 	lastId := c.Query("lastId")
@@ -110,4 +111,50 @@ func (h *PostHandler) GetAllPosts(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(postsList)
+}
+
+// DeletePost handles the deletion of a post
+func (h *PostHandler) DeletePost(c *fiber.Ctx) error {
+	postId := c.Params("id")
+	userId := c.Locals("userId").(string)
+	username := c.Locals("username")
+
+	fmt.Printf("Delete request - Post ID: %s, User ID: %s, Username: %v\n", postId, userId, username)
+
+	// Get post to verify ownership
+	var post models.Post
+	postRef := database.GetFirebaseDB().NewRef(fmt.Sprintf("posts/%s", postId))
+
+	if err := postRef.Get(c.Context(), &post); err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "Post not found",
+		})
+	}
+
+	// Extract username from author handle (remove '@' prefix)
+	authorUsername := strings.TrimPrefix(post.Author.Handle, "@")
+
+	// Compare with username from auth context
+	if username == nil || username.(string) != authorUsername {
+		fmt.Printf("Auth failed - Author username: %s, Request username: %v\n",
+			authorUsername, username)
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "Not authorized to delete this post",
+		})
+	}
+
+	// Delete post and cleanup
+	if err := postRef.Delete(c.Context()); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to delete post",
+		})
+	}
+
+	// Clean up associated likes
+	likesRef := database.GetFirebaseDB().NewRef(fmt.Sprintf("likes/%s", postId))
+	likesRef.Delete(c.Context())
+
+	return c.JSON(fiber.Map{
+		"message": "Post deleted successfully",
+	})
 }
