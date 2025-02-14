@@ -23,6 +23,8 @@ func AuthMiddleware() fiber.Handler {
 		claims, err := jwt.Verify(c.Context(), &jwt.VerifyParams{
 			Token: sessionToken,
 		})
+
+		
 		if err != nil {
 			fmt.Printf("Token verification error: %v\n", err)
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
