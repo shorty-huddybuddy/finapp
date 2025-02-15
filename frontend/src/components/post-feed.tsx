@@ -33,6 +33,10 @@ type Post = {
 const POSTS_PER_PAGE = 10  // Number of posts to load each timeconst POSTS_PER_PAGE = 10  // Number of posts to load each time
 
 export function PostFeed() {
+  // Add a cache key that changes on each mount
+  const cacheKey = useRef(Date.now())
+  const seenPostIds = useRef(new Set<string>())
+  
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -42,7 +46,19 @@ export function PostFeed() {
   const { user } = useUser()
   const observer = useRef<IntersectionObserver | null>(null);
   const router  = useRouter();
-  // Move fetchPosts before it's used
+  
+  // Add a cleanup effect
+  useEffect(() => {
+    return () => {
+      setPosts([])
+      setLastPostId(null)
+      setHasMore(true)
+      if (observer.current) {
+        observer.current.disconnect()
+      }
+    }
+  }, [])
+
   const fetchPosts = useCallback(async () => {
     if (loading || !hasMore) return;
 
@@ -68,9 +84,23 @@ export function PostFeed() {
 
       const fetchedPosts = await response.json()
       
-      // Fetch like status for each post
+      // Filter out any posts we've already seen
+      const uniquePosts = fetchedPosts.filter((post: Post) => {
+        if (seenPostIds.current.has(post.id)) {
+          return false
+        }
+        seenPostIds.current.add(post.id)
+        return true
+      })
+
+      if (uniquePosts.length === 0) {
+        setHasMore(false)
+        return
+      }
+
+      // Fetch like status for unique posts
       const postsWithLikeStatus = await Promise.all(
-        fetchedPosts.map(async (post: Post) => {
+        uniquePosts.map(async (post: Post) => {
           try {
             const likeResponse = await fetch(
               `http://localhost:8080/api/social/posts/${post.id}/like/status`,
@@ -106,7 +136,7 @@ export function PostFeed() {
     } finally {
       setLoading(false)
     }
-  }, [loading, hasMore, lastPostId, getToken]) // Add dependencies
+  }, [loading, hasMore, lastPostId, getToken]) // Removed posts dependency
 
   const lastPostElementRef = useCallback((node: HTMLElement | null) => {
     if (loading) return;
