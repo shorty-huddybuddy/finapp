@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request , Query
 from fastapi.responses import JSONResponse
 import datetime as dt
 import yfinance as yf
@@ -16,6 +16,7 @@ from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.layers import LSTM, Dense, GRU, Dropout, Conv1D, Flatten, Concatenate, Input, Attention
 from tensorflow.keras.optimizers import Adam
 import tensorflow as tf
+from gnews import GNews
 
 # Set random seeds for reproducibility
 seed = 40
@@ -254,3 +255,15 @@ def get_recommendations():
     except Exception as e:
         # Return error if something goes wrong
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+@app.get("/news")
+def get_news(topic: str =  Query ("Latest News", alias="topic")):
+    google_news = GNews()
+    google_news.period = '5d'  # News from last 7 days
+    google_news.max_results = 3  # number of responses across a keyword
+    google_news.language = 'english'  # News in a specific language
+    news = google_news.get_news(topic)
+    # print(news)
+    return JSONResponse(content=news)
+    

@@ -46,6 +46,8 @@ func InitFirebase() {
 		log.Fatalf("Error initializing Firestore: %v", err)
 	}
 	FirestoreClient = firestoreClient
+
+	println("db connected")
 }
 
 // Add collection reference methods

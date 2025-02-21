@@ -6,3 +6,5 @@ yfinance
 scikit-learn
 firebase-admin
 pydantic
+gnews
+uvicorn

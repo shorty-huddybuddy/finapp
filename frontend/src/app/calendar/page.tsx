@@ -1,139 +1,83 @@
-import dayjs from "dayjs";
-import React, { useState } from "react";
-var isBetween = require("dayjs/plugin/isBetween");
+"use client";
 
-const Calendar = () => {
-    dayjs.extend(isBetween);
-    const date = new Date();
+import Calendar from "../../components/Calendar";
+import Sidebar from "../../components/Sidebar_for_calendar";
+import { Navbar } from "../../components/Navbar";
+import { Footer } from "../../components/Footer";
 
-    const [today, setToday] = useState({
-        month: date.getMonth() + 1,
-        year: date.getFullYear(),
-    });
-
-    // set start date and end date of this page
-    var start_date_page = dayjs()
-        .month(today.month - 1)
-        .year(today.year)
-        .startOf("month")
-        .startOf("week")
-        .format();
-    var end_date_page = dayjs()
-        .month(today.month - 1)
-        .year(today.year)
-        .endOf("month")
-        .endOf("week")
-        .format();
-
-    // get array of dates of this page
-    function getDatesInRange(d1, d2) {
-        const date = new Date(d1);
-        const dates = [];
-        while (date <= d2) {
-            dates.push(new Date(date));
-            date.setDate(date.getDate() + 1);
-        }
-        return dates;
-    }
-
-    var arr = getDatesInRange(new Date(start_date_page), new Date(end_date_page));
-
-    // create calendar content
-    const content = arr.map((item, index) => {
-        return (
-            <div key={index} className="md:px-2 md:py-2 p-[2px] cursor-pointer max-w-[20px] md:mb-4 flex md:w-full justify-center"></div>
-                <div className="rounded w-[50px] h-[50px] flex flex-col md:gap-2 items-center justify-center bg-white">
-                    <p className="text-lg font-semibold text-black rounded-circle flex items-center justify-center w-[30px] h-[30px]"></p>
-                        {item.getDate()}
-                    </p>
-                </div>
-            </div>
-        );
-    });
-
-    // increment and decrement month
-    const incrementMonth = () => {
-        if (today.month === 12) {
-            setToday({
-                month: 1,
-                year: today.year + 1,
-            });
-        } else {
-            setToday({
-                month: today.month + 1,
-                year: today.year,
-            });
-        }
-    };
-
-    const decrementMonth = () => {
-        if (today.month === 1) {
-            setToday({
-                month: 12,
-                year: today.year - 1,
-            });
-        } else {
-            setToday({
-                month: today.month - 1,
-                year: today.year,
-            });
-        }
-    };
-
-    const monthNames = [
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
-    ];
-
-    return (
-        <div className="flex items-center justify-center py-3 px-2 md:py-8 md:px-4">
-            <div className="max-w-[80%] min-h-[75vh] md:max-w-[90%] w-full shadow-2xl border-[1.6px] rounded-2xl border-gray-500">
-                <div className="md:py-12 md:px-5 py-4 px-2 flex flex-col rounded-2xl min-h-[75vh] bg-slate-100"></div>
-                    <div className="px-4 md:px-8 flex flex-wrap items-center justify-between">
-                        <span className="text-base font-bold text-gray-800">
-                            {monthNames[today.month-1]} - {today.year}
-                        </span>
-                        <div className="flex items-center">
-                            <button
-                                className="inline-flex items-center px-2 py-1 md:px-4 md:py-2 text-sm font-medium text-white bg-gray-800 rounded-l hover:bg-gray-900"
-                                onClick={decrementMonth}
-                            >
-                                <span>Prev</span>
-                            </button>
-
-                            <button
-                                className="m-2 inline-flex items-center px-2 py-1 md:px-4 md:py-2 text-sm font-medium text-white bg-gray-800 rounded-none hover:bg-gray-900"
-                                onClick={() => setToday({
-                                    month: dayjs().month() + 1,
-                                    year: dayjs().year(),
-                                })}
-                            >
-                                Current
-                            </button>
-
-                            <button
-                                className="inline-flex items-center px-2 py-1 md:px-4 md:py-2 text-sm font-medium text-white bg-gray-800 rounded-r hover:bg-gray-900"
-                                onClick={incrementMonth}
-                            >
-                                <span>Next</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="grid items-center grid-cols-7 max-w-full justify-between pt-12 overflow-x-auto"></div>
-                        {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
-                            <div key={day} className="w-[30px] md:w-full mb-3 flex justify-center">
-                                <p className="text-lg text-center text-gray-800 font-semibold">
-                                    {day}
-                                </p>
-                            </div>
-                        ))}
-                        {content}
-                    </div>
-                </div>
-            </div>
+export default function Home() {
+  return (
+    <div>
+      <Navbar/>
+      <div className="flex h-screen bg-gradient-to-br from-blue-100 to-indigo-200 overflow-hidden">
+        <div className="flex-grow p-6">
+          <Calendar />
         </div>
-    );
-};
+        <div className="w-96 bg-white shadow-lg">
+          <Sidebar />
+        </div>
+      </div>
+      {/* <Footer /> */}
+    </div>
+  );
+}
 
-export default Calendar;
+// import { useState, useEffect } from 'react';
+// import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths } from 'date-fns';
+// import { Card, CardContent } from '@/components/ui/card';
+// import { Button } from '@/components/ui/button';
+
+// export default function CalendarPage() {
+//     const [selectedDate, setSelectedDate] = useState(new Date());
+//     const [events, setEvents] = useState({});
+
+//     useEffect(() => {
+//         fetchData();
+//     }, [selectedDate]);
+
+//     async function fetchData() {
+//         try {
+//             const monthStart = format(startOfMonth(selectedDate), 'yyyy-MM-dd');
+//             const monthEnd = format(endOfMonth(selectedDate), 'yyyy-MM-dd');
+//             const response = await fetch(`/api/getEvents?start=${monthStart}&end=${monthEnd}`);
+//             const result = await response.json();
+//             setEvents(result);
+//         } catch (error) {
+//             console.error('Error fetching data:', error);
+//         }
+//     }
+
+//     const daysInMonth = eachDayOfInterval({
+//         start: startOfMonth(selectedDate),
+//         end: endOfMonth(selectedDate)
+//     });
+
+//     return (
+//         <div className="p-6">
+//             <h1 className="text-xl font-bold mb-4">Monthly Calendar</h1>
+//             <div className="flex justify-between mb-4">
+//                 <Button onClick={() => setSelectedDate(subMonths(selectedDate, 1))}>Previous Month</Button>
+//                 <h2 className="text-lg font-bold">{format(selectedDate, 'MMMM yyyy')}</h2>
+//                 <Button onClick={() => setSelectedDate(addMonths(selectedDate, 1))}>Next Month</Button>
+//             </div>
+//             <div className="grid grid-cols-7 gap-2 border p-4">
+//                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+//                     <div key={day} className="font-bold text-center">{day}</div>
+//                 ))}
+//                 {daysInMonth.map(day => (
+//                     <Card key={day} className="p-2 h-24">
+//                         <CardContent>
+//                             <div className="text-sm font-bold">{format(day, 'd')}</div>
+//                             {events[format(day, 'yyyy-MM-dd')]?.map((event, index) => (
+//                                 <div key={index} className="text-xs bg-gray-200 p-1 rounded mt-1">
+//                                     {event.title} {event.time && `- ${event.time}`}
+//                                 </div>
+//                             ))}
+//                         </CardContent>
+//                     </Card>
+//                 ))}
+//             </div>
+//             <Button onClick={fetchData} className="mt-4">Refresh Events</Button>
+//         </div>
+//     );
+// }
