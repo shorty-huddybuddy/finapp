@@ -1,66 +1,133 @@
 "use client"
 
-import * as React from "react"
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import { DayPicker } from "react-day-picker"
+import { useState, useEffect, useCallback, useRef } from "react"
+import FullCalendar from "@fullcalendar/react"
+import dayGridPlugin from "@fullcalendar/daygrid"
+import timeGridPlugin from "@fullcalendar/timegrid"
+import interactionPlugin from "@fullcalendar/interaction"
+import type { EventInput, DateSelectArg, EventClickArg } from "@fullcalendar/core"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { PlusIcon, ChevronDownIcon } from "lucide-react"
+import EventModal from "./EventModal"
+import { fetchEvents, createEvent, updateEvent, deleteEvent } from "../lib/api"
+import { motion } from "framer-motion"
 
-import { cn } from "@/lib/utils"
-import { buttonVariants } from "@/components/ui/button"
+export default function Calendar() {
+  const [events, setEvents] = useState<EventInput[]>([])
+  const [selectedEvent, setSelectedEvent] = useState<EventInput | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const calendarRef = useRef<FullCalendar>(null)
 
-export type CalendarProps = React.ComponentProps<typeof DayPicker>
+  useEffect(() => { 
+    const loadEvents = async () => {
+      const fetchedEvents = await fetchEvents()
+      setEvents(fetchedEvents)
+    }
+    loadEvents()
+  }, [])
 
-function Calendar({
-  className,
-  classNames,
-  showOutsideDays = true,
-  ...props
-}: CalendarProps) {
+  const handleDateSelect = useCallback((selectInfo: DateSelectArg) => {
+    setSelectedEvent(null)
+    setIsModalOpen(true)
+  }, [])
+
+  const handleEventClick = useCallback((clickInfo: EventClickArg) => {
+    setSelectedEvent(clickInfo.event.toPlainObject())
+    setIsModalOpen(true)
+  }, [])
+
+  const handleEventAdd = useCallback(async (event: EventInput) => {
+    const newEvent = await createEvent(event)
+    setEvents((prev) => [...prev, newEvent])
+  }, [])
+
+  const handleEventUpdate = useCallback(async (event: EventInput) => {
+    const updatedEvent = await updateEvent(event)
+    setEvents((prev) => prev.map((e) => (e.id === updatedEvent.id ? updatedEvent : e)))
+  }, [])
+
+  const handleEventDelete = useCallback(async (eventId: string) => {
+    await deleteEvent(eventId)
+    setEvents((prev) => prev.filter((e) => e.id !== eventId))
+  }, [])
+
+  const scrollToNextMonth = () => {
+    if (calendarRef.current) {
+      const api = calendarRef.current.getApi()
+      api.next()
+    }
+  }
+
   return (
-    <DayPicker
-      showOutsideDays={showOutsideDays}
-      className={cn("p-3", className)}
-      classNames={{
-        months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-        month: "space-y-4",
-        caption: "flex justify-center pt-1 relative items-center",
-        caption_label: "text-sm font-medium",
-        nav: "space-x-1 flex items-center",
-        nav_button: cn(
-          buttonVariants({ variant: "outline" }),
-          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
-        ),
-        nav_button_previous: "absolute left-1",
-        nav_button_next: "absolute right-1",
-        table: "w-full border-collapse space-y-1",
-        head_row: "flex",
-        head_cell:
-          "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
-        row: "flex w-full mt-2",
-        cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-        day: cn(
-          buttonVariants({ variant: "ghost" }),
-          "h-9 w-9 p-0 font-normal aria-selected:opacity-100"
-        ),
-        day_range_end: "day-range-end",
-        day_selected:
-          "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-        day_today: "bg-accent text-accent-foreground",
-        day_outside:
-          "day-outside text-muted-foreground aria-selected:bg-accent/50 aria-selected:text-muted-foreground",
-        day_disabled: "text-muted-foreground opacity-50",
-        day_range_middle:
-          "aria-selected:bg-accent aria-selected:text-accent-foreground",
-        day_hidden: "invisible",
-        ...classNames,
-      }}
-      components={{
-        IconLeft: ({ ...props }) => <ChevronLeft className="h-4 w-4" />,
-        IconRight: ({ ...props }) => <ChevronRight className="h-4 w-4" />,
-      }}
-      {...props}
-    />
+    <Card className="w-full h-full bg-white/80 backdrop-blur-sm shadow-xl rounded-xl overflow-hidden">
+      <CardContent className="p-6 h-full flex flex-col">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-3xl font-bold text-blue-800">Financial Calendar</h2>
+          <Button onClick={() => setIsModalOpen(true)} className="bg-blue-600 hover:bg-blue-700">
+            <PlusIcon className="mr-2 h-4 w-4" /> Add Event
+          </Button>
+        </div>
+        <div className="flex-grow overflow-hidden rounded-lg shadow-lg">
+          <FullCalendar
+            ref={calendarRef}
+            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+            headerToolbar={{
+              left: "prev next today",
+              center: "title",
+              right: "dayGridMonth,timeGridWeek,timeGridDay",
+            }}
+            initialView="dayGridMonth"
+            height="100%"
+            editable={true}
+            selectable={true}
+            selectMirror={true}
+            dayMaxEvents={3}
+            weekends={true}
+            events={events}
+            select={handleDateSelect}
+            eventClick={handleEventClick}
+            dayCellClassNames="p-3 border-2 border-black-100  rounded-md"
+            eventContent={(eventInfo) => (
+              <div className={`p-1 rounded text-xs ${getCategoryColor(eventInfo.event.extendedProps?.category)}`}>
+                {eventInfo.event.title}
+              </div>
+            )}
+          />
+
+        </div>
+        <motion.div className="flex justify-center mt-4" whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.9 }}>
+          <Button onClick={scrollToNextMonth} variant="outline" className="rounded-full">
+            <ChevronDownIcon className="h-6 w-6 text-blue-600" />
+          </Button>
+        </motion.div>
+        {isModalOpen && (
+          <EventModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            event={selectedEvent}
+            onEventAdd={handleEventAdd}
+            onEventUpdate={handleEventUpdate}
+            onEventDelete={handleEventDelete}
+          />
+        )}
+      </CardContent>
+    </Card>
   )
 }
-Calendar.displayName = "Calendar"
 
-export { Calendar }
+function getCategoryColor(category: string) {
+  switch (category) {
+    case "taxes":
+      return "bg-red-200 text-red-800"
+    case "bills":
+      return "bg-blue-200 text-blue-800"
+    case "investments":
+      return "bg-green-200 text-green-800"
+    case "savings":
+      return "bg-yellow-200 text-yellow-800"
+    default:
+      return "bg-gray-200 text-gray-800"
+  }
+}
+

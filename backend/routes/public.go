@@ -12,6 +12,18 @@ func RegisterRoutes(app *fiber.App) {
 	app.Get("/", handlers.PublicHandler)
 	app.Get("/api/test/firebase", handlers.TestDatabaseConnection)
 
+	// calender routes
+	app.Get("/api/calender/events", handlers.FetchEvents)
+	app.Post("/api/calender/events", handlers.CreateEvent)
+	app.Put("/api/calender/events/:id", handlers.UpdateEvent)
+	app.Delete("/api/calender/events/:id", handlers.DeleteEvent)
+
+	app.Get("/api/calender/notifications", handlers.FetchNotifications)
+	app.Get("/api/calender/insights", handlers.FetchInsights)
+	app.Get("/api/calender/market-events", handlers.FetchMarketEvents)
+	app.Get("/api/calender/risk-alerts", handlers.FetchRiskAlerts)
+	app.Get("/api/calender/goals", handlers.FetchGoals)
+
 	// Protected Social Media Routes
 	social := app.Group("/api/social")
 	social.Use(middleware.AuthMiddleware()) // Apply auth middleware to all social routes
@@ -40,4 +52,5 @@ func RegisterRoutes(app *fiber.App) {
 
 	app.Get("/api/search", handlers.SearchHandler)
 	app.Get("/api/price", handlers.PriceHandler)
+
 }
