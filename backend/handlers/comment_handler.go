@@ -22,7 +22,11 @@ func (h *CommentHandler) CreateComment(c *fiber.Ctx) error {
 	postId := c.Params("postId")
 	userId := c.Locals("userId").(string)
 	username := c.Locals("username").(string)
-	userImage := c.Locals("userImage").(string)
+	userImagePtr, ok := c.Locals("userImage").(*string)
+	var userImage string
+	if ok && userImagePtr != nil {
+		userImage = *userImagePtr
+	}
 
 
 	// Parse comment data
