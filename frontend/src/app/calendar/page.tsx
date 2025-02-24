@@ -1,6 +1,6 @@
 "use client";
 
-import Calendar from "../../components/Calendar";
+import Calendar from "../../components/calendar";
 import Sidebar from "../../components/Sidebar_for_calendar";
 import { Navbar } from "../../components/Navbar";
 import { Footer } from "../../components/Footer";

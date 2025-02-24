@@ -24,7 +24,7 @@ import { useUser } from '@clerk/nextjs'
 import { debounce } from "lodash"
 import axios from "axios"
 import { ScrollArea } from "@/components/ui/scroll-area"
-
+import { Chatbot } from "../../components/Chatbot" 
 type WatchlistItem = {
   user_id: string
   ticker: string
@@ -901,6 +901,7 @@ export default function Dashboard() {
               )}
             </DialogContent>
           </Dialog>
+          <Chatbot/>
         </>
       )}
 
