@@ -1,7 +1,7 @@
+
 "use client"
 
-import React from "react"
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
 import { Input } from "../../components/ui/input"
 import { Button } from "../../components/ui/button"
@@ -13,19 +13,16 @@ import TopCoins from "../../components/TopCoins"
 import SearchResults from "../../components/SearchResults"
 import { getCryptoData } from "../../services/api"
 import crypto from "crypto" // Import crypto for user verification
-import {Navbar} from "../../components/Navbar"
-import {Footer} from "../../components/Footer"
-import {Loader} from "../../components/Loader"
+import { Navbar } from "../../components/Navbar"
+import { Footer } from "../../components/Footer"
+import { Loader } from "../../components/Loader"
+import { Chatbot } from "../../components/Chatbot" // New Botpress Chatbot component
 
 interface Coin {
-  // name: string
-  // symbol: string
-
-  id: string  // name 
-  symbol: string // sym,bol
+  id: string  
+  symbol: string 
   current_price: number
   price_change_percentage_24h: number
-  // Add other properties as needed
 }
 
 export default function Dashboard() {
@@ -35,33 +32,9 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [selectedCoin, setSelectedCoin] = useState("BTCUSD")
 
-  // Load chatbot script
-  useEffect(() => {
-    const loadChatbot = () => {
-      const script = document.createElement("script")
-      script.src = "https://www.chatbase.co/embed.min.js"
-      script.id = "Q2rjth501r8z8EHph4FsZ"
-      script.setAttribute("data-domain", "www.chatbase.co")
-      script.defer = true
-      document.body.appendChild(script)
-    }
 
-    if (document.readyState === "complete") {
-      loadChatbot()
-    } else {
-      window.addEventListener("load", loadChatbot)
-    }
-
-    // Cleanup
-    return () => {
-      window.removeEventListener("load", loadChatbot)
-    }
-  }, [])
-
-  // Fetch market data
   useEffect(() => {
     const fetchData = async () => {
-      //setLoading(true)
       try {
         const data = await getCryptoData()
         setMarketData(data)
@@ -73,9 +46,8 @@ export default function Dashboard() {
       }
     }
     fetchData()
-    const timer = setInterval(fetchData, 45000) // Refresh data every minute
+    const timer = setInterval(fetchData, 45000) // Refresh data every 45 seconds
     return () => clearInterval(timer)
-    
   }, [])
 
   // Handle search
@@ -87,7 +59,7 @@ export default function Dashboard() {
     const filtered = marketData?.filter(
       (coin) =>
         coin.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        coin.symbol.toLowerCase().includes(searchQuery.toLowerCase()),
+        coin.symbol.toLowerCase().includes(searchQuery.toLowerCase())
     )
     setFilteredData(filtered || null)
   }
@@ -108,20 +80,15 @@ export default function Dashboard() {
   }
 
   if (loading) {
-    <Loader/>
+    return <Loader/>
   }
 
   return (
     <div className="min-h-screen bg-white text-gray-800 p-4">
       <Navbar/>
       <br /><br/>
-      {/* Chatbot container */}
-      <div
-        id="chatbot-container"
-        className="fixed bottom-4 right-4 z-50"
-        style={{ width: "350px", height: "500px" }}
-      ></div>
-
+      {/* New Botpress Chatbot component */}
+      <Chatbot />
       <div className="max-w-[1800px] mx-auto space-y-4">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-800">Crypto Dashboard</h1>
@@ -142,7 +109,7 @@ export default function Dashboard() {
         {filteredData && <SearchResults data={filteredData} onSelectCoin={handleCoinSelect} />}
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-        <MarketSummary data={marketData} />
+          <MarketSummary data={marketData} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
@@ -178,7 +145,6 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-
       <Footer/>
     </div>
   )
