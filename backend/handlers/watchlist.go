@@ -120,11 +120,14 @@ func removeFromWatchlist(c *fiber.Ctx) error {
 
 func getWatchlist(c *fiber.Ctx) error {
 	userID := c.Query("user_id")
+	fmt.Println(userID);
 	if userID == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Missing user_id",
 		})
 	}
+	
+
 	var priceFetcher = services.NewRealTimePriceFetcher(os.Getenv("FINHUB_API_KEY"))
 
 	ref := database.GetFirebaseDB().NewRef(fmt.Sprintf("watchlists/%s", userID))
