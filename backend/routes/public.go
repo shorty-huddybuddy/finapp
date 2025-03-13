@@ -7,18 +7,19 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-
-
 func RegisterRoutes(app *fiber.App) {
 	// Public routes (no authentication required)
 	app.Get("/", handlers.PublicHandler)
 	app.Get("/api/test/firebase", handlers.TestDatabaseConnection)
 
 	// calender routes
-	app.Get("/api/calender/events", handlers.FetchEvents)
-	app.Post("/api/calender/events", handlers.CreateEvent)
-	app.Put("/api/calender/events/:id", handlers.UpdateEvent)
-	app.Delete("/api/calender/events/:id", handlers.DeleteEvent)
+	// Calendar routes with authentication
+	calendarGroup := app.Group("/api/calender")
+	calendarGroup.Use(middleware.AuthMiddleware())
+	calendarGroup.Get("/events", handlers.FetchEvents)
+	calendarGroup.Post("/events", handlers.CreateEvent)
+	calendarGroup.Put("/events/:id", handlers.UpdateEvent)
+	calendarGroup.Delete("/events/:id", handlers.DeleteEvent)
 
 	app.Get("/api/calender/notifications", handlers.FetchNotifications)
 	app.Get("/api/calender/insights", handlers.FetchInsights)
@@ -37,7 +38,6 @@ func RegisterRoutes(app *fiber.App) {
 	// Like routes
 	social.Post("/posts/:postId/like", handlers.NewLikeHandler().ToggleLike)
 	social.Get("/posts/:postId/like/status", handlers.NewLikeHandler().GetLikeStatus)
-
 
 	// Comment routes
 	social.Post("/posts/:postId/comments", handlers.NewCommentHandler().CreateComment)

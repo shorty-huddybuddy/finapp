@@ -13,6 +13,7 @@ func AuthMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// Get the session JWT from the Authorization header
 		sessionToken := strings.TrimPrefix(c.Get("Authorization"), "Bearer ")
+		
 		if sessionToken == "" {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "No token provided",

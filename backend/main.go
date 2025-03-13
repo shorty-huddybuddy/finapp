@@ -38,6 +38,7 @@ func main() {
 		AllowOrigins: "http://localhost:3000",
 		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
 		AllowMethods: "GET,POST,HEAD,PUT,DELETE,PATCH",
+		
 	}))
 
 	// Register routes
