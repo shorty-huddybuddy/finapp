@@ -5,7 +5,11 @@ import axios from "axios";
 import { Chart } from "chart.js/auto";
 import React from "react"
 
-const PredictionChart = () => {
+interface PredictionChartProps {
+  ticker: string;
+}
+
+const PredictionChart: React.FC<PredictionChartProps> = ({ ticker }) => {
   const chartRef = useRef<HTMLCanvasElement>(null); // Reference for the chart instance
   interface ChartData {
     linear_regression: { Date: string; Prediction: number }[];
@@ -19,7 +23,7 @@ const PredictionChart = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get("http://127.0.0.1:8000/predict?ticker=CSCO&number_of_days=10");
+        const response = await axios.get(`http://127.0.0.1:8000/predict?ticker=${ticker}&number_of_days=10`);
         // console.log(response)
         setChartData(response.data); // Store the API response in state
       } catch (error) {
@@ -28,7 +32,7 @@ const PredictionChart = () => {
     };
 
     fetchData();
-  }, []);
+  }, [ticker]);
 
   // Render the chart when chartData is available
   useEffect(() => {
