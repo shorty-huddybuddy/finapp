@@ -61,7 +61,7 @@ import {
   
   function Navbar() {
     return (
-    //   <Breadcrumb className="bg-black text-white px-20 py-5 text-lg">
+      // <Breadcrumb className="bg-black text-white px-20 py-5 text-lg">
     <nav className="container bg-blue mx-auto px-6 py-4 flex justify-between items-center">
       <Breadcrumb>
         <BreadcrumbList>
@@ -90,7 +90,7 @@ import {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink href="/ai_tools">AI Tools</BreadcrumbLink>
+            <BreadcrumbLink href="/ai_landing">AI Tools</BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
@@ -104,7 +104,7 @@ import {
           <BreadcrumbItem>
             <BreadcrumbLink href="/education">Education</BreadcrumbLink>
           </BreadcrumbItem>
-          {/* <BreadcrumbSeparator /> */}
+          <BreadcrumbSeparator />
           {/* <BreadcrumbItem>
             <BreadcrumbPage>Breadcrumb</BreadcrumbPage>
           </BreadcrumbItem> */}

@@ -12,16 +12,21 @@ import { PlusIcon, ChevronDownIcon } from "lucide-react"
 import EventModal from "./EventModal"
 import { fetchEvents, createEvent, updateEvent, deleteEvent } from "../lib/api"
 import { motion } from "framer-motion"
+import { useAuth } from "@clerk/nextjs"
 
 export default function Calendar() {
   const [events, setEvents] = useState<EventInput[]>([])
   const [selectedEvent, setSelectedEvent] = useState<EventInput | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const calendarRef = useRef<FullCalendar>(null)
+  const {getToken} = useAuth()
+
 
   useEffect(() => { 
+
     const loadEvents = async () => {
-      const fetchedEvents = await fetchEvents()
+      const token = await getToken()
+      const fetchedEvents = await fetchEvents(token)
       setEvents(fetchedEvents)
     }
     loadEvents()
@@ -38,18 +43,49 @@ export default function Calendar() {
   }, [])
 
   const handleEventAdd = useCallback(async (event: EventInput) => {
-    const newEvent = await createEvent(event)
+    const token = await getToken()
+    const newEvent = await createEvent(event,token)
     setEvents((prev) => [...prev, newEvent])
+    
+    // Force calendar to refresh events
+    if (calendarRef.current) {
+      const calendarApi = calendarRef.current.getApi()
+      calendarApi.addEvent(newEvent)
+    }
   }, [])
 
   const handleEventUpdate = useCallback(async (event: EventInput) => {
-    const updatedEvent = await updateEvent(event)
+    const token = await getToken()
+    const updatedEvent = await updateEvent(event,token)
     setEvents((prev) => prev.map((e) => (e.id === updatedEvent.id ? updatedEvent : e)))
+    
+    // Force calendar to refresh the updated event
+    if (calendarRef.current) {
+      const calendarApi = calendarRef.current.getApi()
+      const existingEvent = calendarApi.getEventById(updatedEvent.id as string)
+      if (existingEvent) {
+        existingEvent.setProp('title', updatedEvent.title)
+        existingEvent.setStart(updatedEvent.start)
+        existingEvent.setEnd(updatedEvent.end)
+        existingEvent.setExtendedProp('category', updatedEvent.extendedProps?.category)
+        existingEvent.setAllDay(!!updatedEvent.allDay)
+      }
+    }
   }, [])
 
   const handleEventDelete = useCallback(async (eventId: string) => {
-    await deleteEvent(eventId)
+    const token = await getToken()
+    await deleteEvent(eventId,token)
     setEvents((prev) => prev.filter((e) => e.id !== eventId))
+    
+    // Force calendar to remove the deleted event
+    if (calendarRef.current) {
+      const calendarApi = calendarRef.current.getApi()
+      const existingEvent = calendarApi.getEventById(eventId)
+      if (existingEvent) {
+        existingEvent.remove()
+      }
+    }
   }, [])
 
   const scrollToNextMonth = () => {

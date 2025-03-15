@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { fetchNotifications, fetchInsights, fetchMarketEvents, fetchRiskAlerts, fetchGoals } from "../lib/api"
 import { motion } from "framer-motion"
+import { useAuth } from "@clerk/nextjs"
 
 export default function Sidebar() {
   const [notifications, setNotifications] = useState([])
@@ -13,14 +14,16 @@ export default function Sidebar() {
   const [marketEvents, setMarketEvents] = useState([])
   const [riskAlerts, setRiskAlerts] = useState([])
   const [goals, setGoals] = useState([])
-
+  const {getToken} = useAuth()
   useEffect(() => {
+   
     const loadSidebarData = async () => {
-      setNotifications(await fetchNotifications())
-      setInsights(await fetchInsights())
-      setMarketEvents(await fetchMarketEvents())
-      setRiskAlerts(await fetchRiskAlerts())
-      setGoals(await fetchGoals())
+      const token = await getToken()
+      setNotifications(await fetchNotifications(token))
+      setInsights(await fetchInsights(token))
+      setMarketEvents(await fetchMarketEvents(token))
+      setRiskAlerts(await fetchRiskAlerts(token))
+      setGoals(await fetchGoals(token))
     }
     loadSidebarData()
   }, [])
