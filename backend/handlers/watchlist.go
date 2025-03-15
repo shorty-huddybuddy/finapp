@@ -61,39 +61,74 @@ func WatchlistHandler(c *fiber.Ctx) error {
 }
 
 func addToWatchlist(c *fiber.Ctx) error {
-	var item WatchlistItem
-	if err := c.BodyParser(&item); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
-		})
-	}
+    var item WatchlistItem
+    if err := c.BodyParser(&item); err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+            "error": "Invalid request body",
+        })
+    }
 
-	// Add timestamp
-	item.Timestamp = time.Now().Format(time.RFC3339)
+    // Add timestamp
+    item.Timestamp = time.Now().Format(time.RFC3339)
 
-	// Get reference to user's watchlist
-	ref := database.GetFirebaseDB().NewRef(fmt.Sprintf("watchlists/%s", item.UserID))
+    // Get reference to user's watchlist
+    ref := database.GetFirebaseDB().NewRef(fmt.Sprintf("watchlists/%s", item.UserID))
+    
+    // Check if item with same ticker already exists
+    var items map[string]WatchlistItem
+    if err := ref.Get(context.Background(), &items); err != nil {
+        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+            "error": "Failed to fetch watchlist data",
+        })
+    }
+    
+    // Look for existing item with same ticker and type
+    for existingID, existingItem := range items {
+        if existingItem.Ticker == item.Ticker && existingItem.Type == item.Type {
+            // Item exists, calculate new quantity
+            totalQuantity := existingItem.Quantity + item.Quantity
+            
+            // Calculate weighted average buy price
+            avgPrice := ((existingItem.BuyPrice * existingItem.Quantity) + 
+                        (item.BuyPrice * item.Quantity)) / totalQuantity
+            
+            // Update the existing item
+            updateData := map[string]interface{}{
+                "quantity": totalQuantity,
+                "buy_price": avgPrice,
+                "timestamp": item.Timestamp,
+            }
+            
+            itemRef := ref.Child(existingID)
+            if err := itemRef.Update(context.Background(), updateData); err != nil {
+                return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+                    "error": "Failed to update existing item: " + err.Error(),
+                })
+            }
+            
+            return c.JSON(fiber.Map{
+                "message": "Item updated successfully",
+                "item_id": existingID,
+                "user_id": item.UserID,
+                "updated_quantity": totalQuantity,
+                "updated_price": avgPrice,
+            })
+        }
+    }
+    
+    // No existing item found, create new one
+    newRef, err := ref.Push(context.Background(), item)
+    if err != nil {
+        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+            "error": "Failed to store user data: " + err.Error(),
+        })
+    }
 
-	// Generate a new unique key for the item
-	newRef, err2 := ref.Push(context.Background(), item)
-
-	// if err := newRef.Set(context.Background(),item); err != nil || err2 != nil {
-	//     return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-	//         "error": "Failed to add item to watchlist",
-	//     })
-	// }
-
-	if err2 != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to store user data: " + err2.Error(),
-		})
-	}
-
-	return c.JSON(fiber.Map{
-		"message": "Item added successfully",
-		"item_id": newRef.Key,
-		"user_id": item.UserID,
-	})
+    return c.JSON(fiber.Map{
+        "message": "Item added successfully",
+        "item_id": newRef.Key,
+        "user_id": item.UserID,
+    })
 }
 
 func removeFromWatchlist(c *fiber.Ctx) error {
@@ -120,11 +155,14 @@ func removeFromWatchlist(c *fiber.Ctx) error {
 
 func getWatchlist(c *fiber.Ctx) error {
 	userID := c.Query("user_id")
+	fmt.Println(userID);
 	if userID == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Missing user_id",
 		})
 	}
+	
+
 	var priceFetcher = services.NewRealTimePriceFetcher(os.Getenv("FINHUB_API_KEY"))
 
 	ref := database.GetFirebaseDB().NewRef(fmt.Sprintf("watchlists/%s", userID))

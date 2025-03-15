@@ -13,10 +13,13 @@ func RegisterRoutes(app *fiber.App) {
 	app.Get("/api/test/firebase", handlers.TestDatabaseConnection)
 
 	// calender routes
-	app.Get("/api/calender/events", handlers.FetchEvents)
-	app.Post("/api/calender/events", handlers.CreateEvent)
-	app.Put("/api/calender/events/:id", handlers.UpdateEvent)
-	app.Delete("/api/calender/events/:id", handlers.DeleteEvent)
+	// Calendar routes with authentication
+	calendarGroup := app.Group("/api/calender")
+	calendarGroup.Use(middleware.AuthMiddleware())
+	calendarGroup.Get("/events", handlers.FetchEvents)
+	calendarGroup.Post("/events", handlers.CreateEvent)
+	calendarGroup.Put("/events/:id", handlers.UpdateEvent)
+	calendarGroup.Delete("/events/:id", handlers.DeleteEvent)
 
 	app.Get("/api/calender/notifications", handlers.FetchNotifications)
 	app.Get("/api/calender/insights", handlers.FetchInsights)
