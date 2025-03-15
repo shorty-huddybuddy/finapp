@@ -1,118 +1,158 @@
-// import React from "react"
-// import DropdownButton from "react-bootstrap/DropdownButton";
-// import Dropdown from "react-bootstrap/Dropdown";
-// import {LineChart} from "lucide-react";
-
-// export function Navbar() { 
-
-// return(
-// <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
-//     <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
-//         <div className="flex items-center space-x-2">
-//         <LineChart className="h-6 w-6" />
-//         <span className="text-xl font-bold">FinanceHub</span>
-//         </div>
-//         <div className="hidden md:flex space-x-8">  
-//             <a href="#features" className="hover:text-black-1200">
-//                 Features
-//             </a>
-//             {/* Dropdown for Market Data */}
-//             <DropdownButton
-//                 id="dropdown-basic-button"
-//                 title="Market Data"
-//                 // variant="link"
-//                 className="text-white hover:text-white-200" >
-//                 <Dropdown.Item href="/stock-dashboard">Stocks</Dropdown.Item>
-//                 <Dropdown.Item href="/finance-dashboard">Cryptocurrencies</Dropdown.Item>
-//             </DropdownButton>
-//             <a href="/calendar"> Calender </a>
-//             <a href="/ai_tools"> AI Tools </a>
-//             <a href="/portfolio"> Portfolio </a>
-//             <a href="/edu"> Education </a>
-//             {/* <a href="#testimonials" className="hover:text-white-800">
-//                 Testimonials
-//             </a> */}
-
-//         </div>  
-//         <button className="bg-white text-blue-600 px-6 py-2 rounded-full font-semibold hover:bg-blue-50 transition-colors">
-//         Get Started
-//         </button>
-//     </nav>
-
-// </div>
-// )}
 "use client"
+import React, { useState, useEffect } from "react"
+import Dropdown from "react-bootstrap/Dropdown";
+import { LineChart, Menu, X } from "lucide-react";
+import Head from 'next/head';
 
-import {
-    Breadcrumb,
-    BreadcrumbEllipsis,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator,
-  } from "@/components/ui/breadcrumb";
-  import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-  } from "@/components/ui/dropdown-menu";
+export function Navbar() { 
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   
-  function Navbar() {
-    return (
-      // <Breadcrumb className="bg-black text-white px-20 py-5 text-lg">
-    <nav className="container bg-blue mx-auto px-6 py-4 flex justify-between items-center">
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="#">FinanceHub</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger className="hover:text-foreground">
-                <BreadcrumbEllipsis />
-                <span className="sr-only">Toggle menu</span>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                <DropdownMenuItem asChild>
-                  <a href="/stock-dashboard">Stocks</a>
-                </DropdownMenuItem> 
-                <DropdownMenuItem asChild>
-                  <a href="/finance-dashboard"> Cryptocurrencies </a>
-                </DropdownMenuItem>
-                {/* <DropdownMenuItem asChild>
-                  <a href="#">GitHub</a>                        
-                </DropdownMenuItem> */}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/ai_landing">AI Tools</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/calendar">Calendar</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/portfolio">Portfolio </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/education">Education</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          {/* <BreadcrumbItem>
-            <BreadcrumbPage>Breadcrumb</BreadcrumbPage>
-          </BreadcrumbItem> */}
-        </BreadcrumbList>
-      </Breadcrumb>
-      </nav>
-    );
-  }
-  
-  export { Navbar };
-  
+  // Add useEffect to ensure proper initialization
+  useEffect(() => {
+    // Force re-render of dropdown elements
+    const dropdownElements = document.querySelectorAll('.dropdown-toggle');
+    dropdownElements.forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const parent = el.parentElement;
+        if (parent) {
+          const menu = parent.querySelector('.dropdown-menu');
+          if (menu) {
+            menu.classList.toggle('show');
+          }
+        }
+      });
+    });
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+        menu.classList.remove('show');
+      });
+    });
+
+    // Add custom styles for links and font
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+      
+      .navbar-font {
+        font-family: 'Poppins', sans-serif;
+      }
+      
+      .navbar-font a {
+        text-decoration: none !important;
+      }
+      
+      .dropdown-toggle::after {
+        display: none !important;
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      // Cleanup event listeners and styles
+      document.querySelectorAll('.dropdown-toggle').forEach(el => {
+        el.removeEventListener('click', () => {});
+      });
+      document.removeEventListener('click', () => {});
+    };
+  }, []);
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
+  return(
+    <>
+      <Head>
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+      </Head>
+      
+      <div className="bg-gradient-to-r from-blue-700 to-blue-900 text-white shadow-lg relative navbar-font">
+        {/* Desktop and Mobile Header */}
+        <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center space-x-3">
+            <LineChart className="h-7 w-7 text-blue-200" />
+            <span className="text-2xl font-bold tracking-tight">FinanceHub</span>
+          </div>
+          
+          {/* Mobile menu button */}
+          <button 
+            className="md:hidden focus:outline-none" 
+            onClick={toggleMenu}
+            aria-label="Toggle menu"
+          >
+            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
+          
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-8">  
+            <a href="/" className="text-blue-100 hover:text-white transition-colors duration-200 font-medium no-underline">
+              Home
+            </a>
+            
+            {/* Custom dropdown implementation */}
+            <div className="relative group" style={{zIndex: 1050}}>
+              <button className="flex items-center text-blue-100 hover:text-white transition-colors duration-200 font-medium">
+                Market Data
+                <svg className="ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              <div className="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200" 
+                   style={{zIndex: 1050}}>
+                <a href="/stock-dashboard" className="block px-4 py-2 text-gray-800 hover:bg-blue-100 no-underline">Stocks</a>
+                <a href="/finance-dashboard" className="block px-4 py-2 text-gray-800 hover:bg-blue-100 no-underline">Cryptocurrencies</a>
+              </div>
+            </div>
+            
+            <a href="/calendar" className="text-blue-100 hover:text-white transition-colors duration-200 font-medium no-underline">
+              Calendar
+            </a>
+            <a href="/ai_landing" className="text-blue-100 hover:text-white transition-colors duration-200 font-medium no-underline">
+              AI Tools
+            </a>
+            <a href="/portfolio" className="text-blue-100 hover:text-white transition-colors duration-200 font-medium no-underline">
+              Portfolio
+            </a>
+            <a href="/education" className="text-blue-100 hover:text-white transition-colors duration-200 font-medium no-underline">
+              Education
+            </a>
+          </div>
+
+          {/* Desktop CTA Button */}
+          <button className="hidden md:block bg-white text-blue-700 px-6 py-2 rounded-full font-semibold hover:bg-blue-50 hover:shadow-md transition-all duration-200">
+            Get Started
+          </button>
+        </nav>
+        
+        {/* Mobile menu with improved dropdown */}
+        <div className={`md:hidden ${isMenuOpen ? 'block' : 'hidden'} bg-blue-800 pb-4 px-6 shadow-lg`} style={{zIndex: 1040}}>
+          <a href="/" className="block py-3 text-blue-100 hover:text-white border-b border-blue-700 no-underline">Home </a>
+          
+          <div className="py-2 border-b border-blue-700">
+            <Dropdown className="w-full">
+              <Dropdown.Toggle variant="link" id="mobile-dropdown" className="p-0 py-1 text-blue-100 hover:text-white no-underline">
+                Market Data
+              </Dropdown.Toggle>
+              <Dropdown.Menu style={{backgroundColor: '#1e40af', border: 'none', width: '100%'}}>
+                <Dropdown.Item href="/stock-dashboard" style={{color: 'white'}} className="hover:bg-blue-700 py-2 no-underline">Stocks</Dropdown.Item>
+                <Dropdown.Item href="/finance-dashboard" style={{color: 'white'}} className="hover:bg-blue-700 py-2 no-underline">Cryptocurrencies</Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown>
+          </div>
+          
+          <a href="/calendar" className="block py-3 text-blue-100 hover:text-white border-b border-blue-700 no-underline">Calendar</a>
+          <a href="/ai_landing" className="block py-3 text-blue-100 hover:text-white border-b border-blue-700 no-underline">AI Tools</a>
+          <a href="/portfolio" className="block py-3 text-blue-100 hover:text-white border-b border-blue-700 no-underline">Portfolio</a>
+          <a href="/education" className="block py-3 text-blue-100 hover:text-white border-b border-blue-700 no-underline">Education</a>
+          
+          <button className="mt-4 w-full bg-white text-blue-700 px-6 py-3 rounded-full font-semibold hover:bg-blue-50 hover:shadow transition-colors">
+            Let's go
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
