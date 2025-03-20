@@ -15,6 +15,8 @@ import { useRouter } from 'next/navigation'
 import { SubscriptionDialog } from "./subscription-dialog"
 import { loadStripe } from "@stripe/stripe-js"
 import { useExtendedUser } from "@/hooks/useExtendedUser"
+import { ImagePreview } from "@/components/image-preview"
+
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 type Post = {
   id: string
@@ -60,6 +62,10 @@ export function PostFeed() {
   const [showSubscribeDialog, setShowSubscribeDialog] = useState(false)
   const [selectedCreator, setSelectedCreator] = useState<string | null>(null)
   const [subscriptionType, setSubscriptionType] = useState<"creator" | "platform" | null>(null)
+
+  // Add image preview states
+  const [imagePreviewOpen, setImagePreviewOpen] = useState(false)
+  const [currentImageUrl, setCurrentImageUrl] = useState<string>("")
 
   // Add a cleanup effect
   useEffect(() => {
@@ -359,6 +365,12 @@ export function PostFeed() {
     router.push(`/social/post/${post.id}`);
   };
 
+  const handleImageClick = (e: React.MouseEvent, imageUrl: string) => {
+    e.stopPropagation()
+    setCurrentImageUrl(imageUrl)
+    setImagePreviewOpen(true)
+  }
+
   if (error) return <div className="p-4 text-center text-red-500">{error}</div>
   
   // Show centered spinner for initial loading
@@ -438,8 +450,16 @@ export function PostFeed() {
                   <div className={`${!hasAccess && isPremiumContent ? 'blur-md select-none' : ''}`}>
                     <p className="text-sm whitespace-pre-line">{post.content}</p>
                     {post.image && (
-                      <div className="relative aspect-video w-full overflow-hidden rounded-lg mt-2">
-                        <Image src={post.image || "/placeholder.svg"} alt="Post image" fill className="object-cover" />
+                      <div 
+                        className="relative aspect-video w-full overflow-hidden rounded-lg mt-2"
+                        onClick={(e) => handleImageClick(e, post.image || "")}
+                      >
+                        <Image 
+                          src={post.image || "/placeholder.svg"} 
+                          alt="Post image" 
+                          fill 
+                          className="object-cover cursor-pointer hover:brightness-90 transition-all" 
+                        />
                       </div>
                     )}
                   </div>
@@ -532,6 +552,13 @@ export function PostFeed() {
         creatorId={selectedCreator}
         onSubscribe={handleSubscribe}
         loading={loading}
+      />
+      {/* Add ImagePreview component */}
+      <ImagePreview
+        open={imagePreviewOpen}
+        onOpenChange={setImagePreviewOpen}
+        images={[currentImageUrl].filter(Boolean)} // Filter out empty strings
+        initialIndex={0}
       />
     </div>
   )

@@ -11,6 +11,7 @@ import { toast } from "sonner"
 import { useAuth, useUser } from "@clerk/nextjs"
 import { PostDetailHeader } from "@/components/post-detail-header"
 import Image from "next/image"
+import { ImagePreview } from "@/components/image-preview"
 
 type Post = {
   id: string;
@@ -47,6 +48,7 @@ export default function PostDetailPage() {
   const [commentText, setCommentText] = useState("")
   const { getToken } = useAuth()
   const { id } = useParams() as { id: string }
+  const [imagePreviewOpen, setImagePreviewOpen] = useState(false)
 
   // Fetch post details and comments on mount
   useEffect(() => {
@@ -149,8 +151,15 @@ export default function PostDetailPage() {
           <CardContent className="space-y-4">
             <p className="text-sm whitespace-pre-line">{post.content}</p>
             {post.image && (
-              <div className="relative w-full rounded-lg overflow-hidden">
-                 <img src={post.image} alt="Post image" className="mt-4 rounded-lg" />
+              <div 
+                className="relative w-full rounded-lg overflow-hidden cursor-pointer"
+                onClick={() => setImagePreviewOpen(true)}
+              >
+                <img 
+                  src={post.image} 
+                  alt="Post image" 
+                  className="mt-4 rounded-lg hover:brightness-90 transition-all" 
+                />
               </div>
             )}
           </CardContent>
@@ -214,6 +223,16 @@ export default function PostDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Add ImagePreview component */}
+      {post?.image && (
+        <ImagePreview
+          open={imagePreviewOpen}
+          onOpenChange={setImagePreviewOpen}
+          images={[post.image]}
+          initialIndex={0}
+        />
+      )}
     </div>
   )
 }
