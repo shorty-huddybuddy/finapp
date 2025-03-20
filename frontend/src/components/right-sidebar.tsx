@@ -4,8 +4,15 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { useUser } from "@clerk/nextjs"
+import { SubscriptionDialog } from "@/components/subscription-dialog"
+import { useState } from "react"
 
 export function RightSidebar() {
+  const [showSubscribeDialog, setShowSubscribeDialog] = useState(false)
+  const [subscriptionType, setSubscriptionType] = useState<"creator" | "platform" | null>(null)
+  const [selectedCreator, setSelectedCreator] = useState<string | null>(null)
+
   const trendingTopics = [
     { title: "Bitcoin", posts: "125K" },
     { title: "Trading", posts: "89K" },
@@ -13,8 +20,8 @@ export function RightSidebar() {
   ]
 
   const suggestedTraders = [
-    { name: "Sarah Crypto", handle: "@sarahcrypto", rating: "4.9" },
-    { name: "Trading Pro", handle: "@tradingpro", rating: "4.8" },
+    { id: "trader-1", name: "Sarah Crypto", handle: "@sarahcrypto", rating: "4.9" },
+    { id: "trader-2", name: "Trading Pro", handle: "@tradingpro", rating: "4.8" },
   ]
 
   return (
@@ -22,11 +29,26 @@ export function RightSidebar() {
       <div className="sticky top-4">
         <Card className="mb-4">
           <CardHeader>
-            <CardTitle>Subscribe to Premium</CardTitle>
+            <CardTitle>Premium Access</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">Get exclusive trading insights and premium predictions</p>
-            <Button className="w-full">Subscribe Now</Button>
+            <div className="space-y-4">
+              <div className="p-4 border rounded-lg">
+                <h3 className="font-bold mb-2">Platform Premium</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Access all premium content from all creators
+                </p>
+                <Button 
+                  className="w-full" 
+                  onClick={() => {
+                    setSubscriptionType("platform")
+                    setShowSubscribeDialog(true)
+                  }}
+                >
+                  $19.99/month
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -48,7 +70,7 @@ export function RightSidebar() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Top Traders</CardTitle>
+            <CardTitle>Top Creators</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -62,13 +84,30 @@ export function RightSidebar() {
                     <p className="text-sm font-medium truncate">{trader.name}</p>
                     <p className="text-sm text-muted-foreground truncate">{trader.handle}</p>
                   </div>
-                  <Badge variant="secondary">⭐ {trader.rating}</Badge>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSubscriptionType("creator")
+                      setSelectedCreator(trader.id)
+                      setShowSubscribeDialog(true)
+                    }}
+                  >
+                    Subscribe
+                  </Button>
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
       </div>
+
+      <SubscriptionDialog 
+        open={showSubscribeDialog}
+        onOpenChange={setShowSubscribeDialog}
+        type={subscriptionType}
+        creatorId={selectedCreator}
+      />
     </aside>
   )
 }

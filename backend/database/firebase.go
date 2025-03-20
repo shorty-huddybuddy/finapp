@@ -21,6 +21,7 @@ const (
 	CommentsCollection             = "comments"
 	LikesCollection                = "likes"
 	PremiumSubscriptionsCollection = "premium_subscriptions"
+	CreatorSubscriptionsCollection = "creator_subscriptions"
 )
 
 var (
@@ -69,6 +70,10 @@ func Likes() *firestore.CollectionRef {
 
 func PremiumSubscriptions() *firestore.CollectionRef {
 	return FirestoreClient.Collection(PremiumSubscriptionsCollection)
+}
+
+func CreatorSubscriptions() *firestore.CollectionRef {
+	return FirestoreClient.Collection(CreatorSubscriptionsCollection)
 }
 
 // Update cleanup method to only close Firestore
