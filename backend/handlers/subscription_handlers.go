@@ -149,6 +149,18 @@ func CreateSubscription(c *fiber.Ctx) error {
 		})
 	}
 
+	// Log request data with more detail
+	log.Printf("[CreateSubscription] Creating subscription - Type: %s, CreatorID: %s, TierID: %s",
+		req.Type, req.CreatorID, req.TierID)
+
+	// Validate creator subscription has creatorId
+	if req.Type == "creator" && req.CreatorID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Creator ID is required for creator subscriptions",
+			"code":  "MISSING_CREATOR_ID",
+		})
+	}
+
 	// Prepare metadata for the subscription
 	metadata := map[string]string{
 		"userId": userID,
@@ -404,3 +416,4 @@ func isIndexError(err error) bool {
 		strings.Contains(err.Error(), ".indexOn") ||
 		strings.Contains(err.Error(), "400"))
 }
+

@@ -54,7 +54,7 @@ export function PostFeed() {
   const { user } = useUser()
   const observer = useRef<IntersectionObserver | null>(null);
   const router  = useRouter();
-  const { isPremium } = useExtendedUser()
+  const { isPremium, subscriptions } = useExtendedUser()
   
   // Add subscription dialog states
   const [showSubscribeDialog, setShowSubscribeDialog] = useState(false)
@@ -86,9 +86,18 @@ export function PostFeed() {
       return true;
     }
 
+    // Check if user has an active subscription to this creator
+    if (subscriptions && post.author.handle) {
+      const creatorId = post.author.handle.replace('@', '');
+      const hasCreatorSub = subscriptions.some(
+        sub => sub.creatorId === creatorId && sub.status === 'active'
+      );
+      if (hasCreatorSub) return true;
+    }
+
     // For premium content, check server-provided access flag
     return post.hasAccess === true;
-  }, [user, isPremium]);
+  }, [user, isPremium, subscriptions]);
 
   const fetchPosts = useCallback(async () => {
     if (loading || !hasMore) return;
@@ -284,6 +293,15 @@ export function PostFeed() {
       setLoading(true);
       const token = await getToken();
       
+      // Add validation for creator subscriptions
+      if (type === "creator" && !creatorId) {
+        toast.error("Creator ID is required for creator subscriptions");
+        return;
+      }
+
+      // Debug log
+      console.log("Creating subscription:", { type, creatorId, tierId: type === 'platform' ? 'premium-monthly' : 'creator-basic' });
+
       const response = await fetch('http://localhost:8080/api/subscriptions/create', {
         method: 'POST',
         headers: {
@@ -447,7 +465,9 @@ export function PostFeed() {
                           <Button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleSubscribe("creator", post.creatorId);
+                              // Use the handle without @ as the creatorId
+                              const creatorId = post.author.handle.replace('@', '');
+                              handleSubscribe("creator", creatorId);
                             }}
                             className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white"
                             disabled={loading}

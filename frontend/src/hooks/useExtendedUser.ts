@@ -72,7 +72,7 @@ export function useExtendedUser() {
   return {
     user,
     isPremium: subscriptionStatus?.platformSubscription?.status === 'active',
-    subscriptions: subscriptionStatus,
+    subscriptions: subscriptionStatus?.creatorSubscriptions || [],
     isLoaded: !!user
   }
 }
