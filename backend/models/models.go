@@ -40,7 +40,7 @@ type Post struct {
 	Liked                    bool      `json:"liked" firestore:"liked,omitempty"`
 	RequiredSubscriptionTier string    `json:"requiredSubscriptionTier,omitempty" firestore:"requiredSubscriptionTier,omitempty"`
 	MinimumTierRequired      string    `json:"minimumTierRequired,omitempty" firestore:"minimumTierRequired,omitempty"`
-	HasAccess                bool      `json:"hasAccess" firestore:"hasAccess"` // Add this field
+	HasAccess                bool      `json:"hasAccess" firestore:"hasAccess"` // Indicates if current user can access this premium content
 	CreatorID                string    `json:"creatorId,omitempty" firestore:"creatorId,omitempty"`
 }
 

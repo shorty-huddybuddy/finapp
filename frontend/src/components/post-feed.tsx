@@ -13,7 +13,9 @@ import { Spinner } from "@/components/ui/spinner"
 import { toast } from "sonner"  
 import { useRouter } from 'next/navigation'
 import { SubscriptionDialog } from "./subscription-dialog"
-
+import { loadStripe } from "@stripe/stripe-js"
+import { useExtendedUser } from "@/hooks/useExtendedUser"
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 type Post = {
   id: string
   author: {
@@ -52,6 +54,7 @@ export function PostFeed() {
   const { user } = useUser()
   const observer = useRef<IntersectionObserver | null>(null);
   const router  = useRouter();
+  const { isPremium } = useExtendedUser()
   
   // Add subscription dialog states
   const [showSubscribeDialog, setShowSubscribeDialog] = useState(false)
@@ -70,7 +73,10 @@ export function PostFeed() {
     }
   }, [])
 
-  const canViewPremiumContent = (post: Post) => {
+  const canViewPremiumContent = useCallback((post: Post) => {
+    // If user has platform premium, they can see all content
+    if (isPremium) return true;
+
     // Check if post is premium
     const isPremiumContent = post.isPremiumPost || post.author.isPremium;
     if (!isPremiumContent) return true;
@@ -82,7 +88,7 @@ export function PostFeed() {
 
     // For premium content, check server-provided access flag
     return post.hasAccess === true;
-  };
+  }, [user, isPremium]);
 
   const fetchPosts = useCallback(async () => {
     if (loading || !hasMore) return;
@@ -107,8 +113,7 @@ export function PostFeed() {
         throw new Error('Failed to fetch posts')
       }
 
-      const fetchedPosts = await response.json()
-      
+      const fetchedPosts = await response.json()      
       // Filter out any posts we've already seen
       const uniquePosts = fetchedPosts.filter((post: Post) => {
         if (seenPostIds.current.has(post.id)) {
@@ -232,41 +237,6 @@ export function PostFeed() {
     }
   };
 
-  // Add this effect to fetch initial like status for posts
-  useEffect(() => {
-    const fetchLikeStatus = async () => {
-      if (!posts.length) return;
-      
-      const token = await getToken();
-      if (!token) return;
-
-      try {
-        const updatedPosts = await Promise.all(
-          posts.map(async (post) => {
-            const response = await fetch(`http://localhost:8080/api/social/posts/${post.id}/like/status`, {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-              }
-            });
-            
-            
-            if (response.ok) {
-              const { liked } = await response.json();
-              return { ...post, liked };
-            }
-            return post;
-          })
-        );
-
-        setPosts(updatedPosts);
-      } catch (error) {
-        console.error('Error fetching like status:', error);
-      }
-    };
-
-    fetchLikeStatus();
-  }, [posts.length, getToken]);
-
   // Add delete handler
   const handleDeletePost = async (postId: string, authorHandle: string) => {
     try {
@@ -301,6 +271,54 @@ export function PostFeed() {
     } catch (error) {
       console.error('Error deleting post:', error);
       toast.error('Failed to delete post');
+    }
+  };
+
+  const handleSubscribe = async (type: "creator" | "platform", creatorId?: string) => {
+    if (!user) {
+      toast.error("Please sign in to subscribe");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const token = await getToken();
+      
+      const response = await fetch('http://localhost:8080/api/subscriptions/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          type,
+          creatorId,
+          tierId: type === 'platform' ? 'premium-monthly' : 'creator-basic'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create subscription');
+      }
+
+      const { sessionId } = await response.json();
+      
+      // Redirect to Stripe checkout
+      const stripe = await stripePromise;
+      if (!stripe) {
+        throw new Error('Stripe failed to load');
+      }
+
+      const { error } = await stripe.redirectToCheckout({ sessionId });
+      if (error) {
+        throw error;
+      }
+
+    } catch (error) {
+      console.error('Subscription error:', error);
+      toast.error('Failed to start subscription process');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -429,12 +447,12 @@ export function PostFeed() {
                           <Button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setSelectedCreator(post.creatorId || null);
-                              setShowSubscribeDialog(true);
+                              handleSubscribe("creator", post.creatorId);
                             }}
                             className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white"
+                            disabled={loading}
                           >
-                            Subscribe Now
+                            {loading ? "Processing..." : "Subscribe Now"}
                           </Button>
                         </div>
                       </div>
@@ -487,11 +505,13 @@ export function PostFeed() {
         </>
       )}
       {/* Add SubscriptionDialog at the bottom of the component */}
-      <SubscriptionDialog
+      <SubscriptionDialog 
         open={showSubscribeDialog}
         onOpenChange={setShowSubscribeDialog}
         type={subscriptionType}
         creatorId={selectedCreator}
+        onSubscribe={handleSubscribe}
+        loading={loading}
       />
     </div>
   )

@@ -4,7 +4,6 @@ import (
 	"backend/config"
 	"backend/database"
 	"backend/routes"
-	"fmt"
 	"log"
 	"os"
 
@@ -16,13 +15,15 @@ import (
 )
 
 func init() {
-	// Load .env file
+	// Load .env file first before any initialization
 	if err := godotenv.Load(); err != nil {
 		log.Printf("No .env file found")
 	}
 
-	// Configure Stripe
-	stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
+	// Initialize Stripe configuration after env vars are loaded
+	if err := config.InitStripe(); err != nil {
+		log.Fatalf("Failed to initialize Stripe: %v", err)
+	}
 
 	// Enable Stripe debug mode in non-production
 	if os.Getenv("APP_ENV") != "production" {
@@ -33,11 +34,6 @@ func init() {
 		}
 	}
 
-	// Initialize Stripe with proper error handling
-	if err := config.InitStripe(); err != nil {
-		log.Fatalf("Failed to initialize Stripe: %v", err)
-	}
-
 	// Validate Stripe API key
 	if err := config.ValidateAPIKey(); err != nil {
 		log.Fatalf("Stripe API key validation failed: %v", err)
@@ -45,11 +41,6 @@ func init() {
 }
 
 func main() {
-	// Load environment variables
-	if err := godotenv.Load(); err != nil {
-		fmt.Println("Error loading .env file")
-	}
-
 	// Initialize Clerk
 	clerkKey := os.Getenv("CLERK_SECRET_KEY")
 	if clerkKey == "" {

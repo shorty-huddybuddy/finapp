@@ -12,8 +12,8 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"github.com/stripe/stripe-go/v72"
-	"github.com/stripe/stripe-go/v72/webhook"
+	"github.com/stripe/stripe-go/v81"
+	"github.com/stripe/stripe-go/v81/webhook"
 )
 
 // HandleStripeWebhook processes webhooks from Stripe
@@ -39,20 +39,39 @@ func HandleStripeWebhook(c *fiber.Ctx) error {
 	// Process different event types
 	switch event.Type {
 	case "checkout.session.completed":
-		// Handle successful checkout
-		err = handleCheckoutCompleted(event)
+		var session stripe.CheckoutSession
+		if err := json.Unmarshal(event.Data.Raw, &session); err != nil {
+			return fmt.Errorf("error parsing webhook JSON: %v", err)
+		}
+		err = handleCheckoutCompleted(session)
+
 	case "customer.subscription.updated":
-		// Handle subscription updates
-		err = handleSubscriptionUpdated(event)
+		var subscription stripe.Subscription
+		if err := json.Unmarshal(event.Data.Raw, &subscription); err != nil {
+			return fmt.Errorf("error parsing webhook JSON: %v", err)
+		}
+		err = handleSubscriptionUpdated(subscription)
+
 	case "customer.subscription.deleted":
-		// Handle subscription cancellations
-		err = handleSubscriptionCanceled(event)
+		var subscription stripe.Subscription
+		if err := json.Unmarshal(event.Data.Raw, &subscription); err != nil {
+			return fmt.Errorf("error parsing webhook JSON: %v", err)
+		}
+		err = handleSubscriptionCanceled(subscription)
+
 	case "invoice.payment_succeeded":
-		// Handle successful payments
-		err = handlePaymentSucceeded(event)
+		var invoice stripe.Invoice
+		if err := json.Unmarshal(event.Data.Raw, &invoice); err != nil {
+			return fmt.Errorf("error parsing webhook JSON: %v", err)
+		}
+		err = handlePaymentSucceeded(invoice)
+
 	case "invoice.payment_failed":
-		// Handle failed payments
-		err = handlePaymentFailed(event)
+		var invoice stripe.Invoice
+		if err := json.Unmarshal(event.Data.Raw, &invoice); err != nil {
+			return fmt.Errorf("error parsing webhook JSON: %v", err)
+		}
+		err = handlePaymentFailed(invoice)
 	}
 
 	if err != nil {
@@ -66,35 +85,50 @@ func HandleStripeWebhook(c *fiber.Ctx) error {
 }
 
 // handleCheckoutCompleted processes successful checkout sessions
-func handleCheckoutCompleted(event stripe.Event) error {
-	var session stripe.CheckoutSession
-	err := json.Unmarshal(event.Data.Raw, &session)
-	if err != nil {
-		return err
-	}
+func handleCheckoutCompleted(session stripe.CheckoutSession) error {
+	log.Printf("Processing checkout.session.completed: %s", session.ID)
 
 	// Get metadata from the session
 	userID := session.ClientReferenceID
-	subscriptionID := session.Subscription.ID
 
-	if userID == "" || subscriptionID == "" {
-		return fmt.Errorf("missing user ID or subscription ID")
+	// Check for required fields
+	if userID == "" {
+		return fmt.Errorf("missing user ID in client reference")
 	}
 
-	// Get metadata from subscription data
-	metadata := session.Metadata
-	if metadata == nil {
-		metadata = make(map[string]string)
+	// Debug: Log all metadata to diagnose issue
+	log.Printf("Session metadata: %v", session.Metadata)
+
+	// Get subscription ID from the session
+	var subscriptionID string
+	if session.Subscription != nil {
+		subscriptionID = session.Subscription.ID // Access the ID field from the Subscription object
+	} else {
+		return fmt.Errorf("missing subscription ID")
 	}
 
-	subscriptionType := metadata["type"]
-	creatorID := metadata["creatorId"]
-	tierID := metadata["tierId"]
+	// Get metadata - use defaults if missing
+	subscriptionType := "platform" // Default to platform
+	tierID := "premium-monthly"    // Default tier
+
+	if session.Metadata != nil {
+		if t, ok := session.Metadata["type"]; ok && t != "" {
+			subscriptionType = t
+		}
+		if t, ok := session.Metadata["tierId"]; ok && t != "" {
+			tierID = t
+		}
+	}
+
+	creatorID := ""
+	if session.Metadata != nil {
+		creatorID = session.Metadata["creatorId"]
+	}
 
 	// Create subscription in database based on type
 	ctx := context.Background()
 
-	if subscriptionType == "platform" {
+	if subscriptionType == "platform" || subscriptionType == "" {
 		// Create platform subscription
 		platformSub := models.PremiumSubscription{
 			ID:            uuid.New().String(),
@@ -103,7 +137,7 @@ func handleCheckoutCompleted(event stripe.Event) error {
 			Type:          "platform",
 			TierID:        tierID,
 			StartDate:     time.Now(),
-			EndDate:       time.Now().AddDate(0, 1, 0), // 1 month by default
+			EndDate:       time.Now().AddDate(0, 1, 0),
 			AutoRenew:     true,
 			PaymentStatus: "paid",
 			StripeSubID:   subscriptionID,
@@ -131,7 +165,7 @@ func handleCheckoutCompleted(event stripe.Event) error {
 			TierID:       tierID,
 			Status:       "active",
 			StartDate:    time.Now(),
-			EndDate:      time.Now().AddDate(0, 1, 0), // 1 month by default
+			EndDate:      time.Now().AddDate(0, 1, 0),
 			AutoRenew:    true,
 			StripeSubID:  subscriptionID,
 			CreatedAt:    time.Now(),
@@ -144,102 +178,86 @@ func handleCheckoutCompleted(event stripe.Event) error {
 			return err
 		}
 
-		// Get creator data
-		var creator models.User
+		// Update creator's subscriber count - get all data and filter in memory
 		creatorRef := database.GetFirebaseDB().NewRef(fmt.Sprintf("users/%s", creatorID))
-		if err := creatorRef.Get(ctx, &creator); err != nil {
-			return err
-		}
-
-		// Update creator's subscriber count
-		if creator.CreatorProfile != nil {
+		var creator models.User
+		if err := creatorRef.Get(ctx, &creator); err == nil && creator.CreatorProfile != nil {
 			creator.CreatorProfile.SubscriberCount++
 			return creatorRef.Update(ctx, map[string]interface{}{
 				"creatorProfile/subscriberCount": creator.CreatorProfile.SubscriberCount,
 			})
 		}
+	} else {
+		return fmt.Errorf("invalid subscription configuration - type: %s, creatorId: %s",
+			subscriptionType, creatorID)
 	}
 
-	return fmt.Errorf("invalid subscription type")
+	return nil
 }
 
 // handleSubscriptionUpdated processes subscription update events
-func handleSubscriptionUpdated(event stripe.Event) error {
-	var subscription stripe.Subscription
-	err := json.Unmarshal(event.Data.Raw, &subscription)
-	if err != nil {
-		return err
-	}
+func handleSubscriptionUpdated(subscription stripe.Subscription) error {
+	// Debug log the subscription data
+	log.Printf("Processing subscription update for subscription: %s", subscription.ID)
 
-	// Update subscription in database
-	metadata := subscription.Metadata
-	if metadata == nil {
-		return fmt.Errorf("missing metadata")
+	// Get all metadata - be more tolerant of missing values
+	subscriptionType := ""
+	if subscription.Metadata != nil {
+		subscriptionType = subscription.Metadata["type"]
 	}
-
-	subscriptionType := metadata["type"]
 	subscriptionID := subscription.ID
 	status := string(subscription.Status)
 	ctx := context.Background()
 
-	// Query subscriptions by Stripe subscription ID
-	if subscriptionType == "platform" {
-		// Find platform subscription by Stripe ID
+	// Find subscription in database - fetch all and filter in memory
+	if subscriptionType == "platform" || subscriptionType == "" {
+		// Get all platform subscriptions and filter
 		ref := database.GetFirebaseDB().NewRef("premium_subscriptions")
-		query := ref.OrderByChild("stripeSubID").EqualTo(subscriptionID).LimitToFirst(1)
-
-		var results map[string]models.PremiumSubscription
-		if err := query.Get(ctx, &results); err != nil {
-			return fmt.Errorf("subscription query failed: %v", err)
+		var allSubs map[string]models.PremiumSubscription
+		if err := ref.Get(ctx, &allSubs); err != nil {
+			return fmt.Errorf("failed to fetch subscriptions: %w", err)
 		}
 
-		if len(results) == 0 {
-			return fmt.Errorf("subscription not found")
+		// Find matching subscription by Stripe ID
+		for id, sub := range allSubs {
+			if sub.StripeSubID == subscriptionID {
+				subRef := database.GetFirebaseDB().NewRef(fmt.Sprintf("premium_subscriptions/%s", id))
+				return subRef.Update(ctx, map[string]interface{}{
+					"status":    status,
+					"updatedAt": time.Now(),
+				})
+			}
 		}
 
-		// Update the first matching subscription
-		for id := range results {
-			subRef := database.GetFirebaseDB().NewRef(fmt.Sprintf("premium_subscriptions/%s", id))
-			return subRef.Update(ctx, map[string]interface{}{
-				"status":    status,
-				"updatedAt": time.Now(),
-			})
-		}
+		log.Printf("No matching platform subscription found for Stripe ID: %s", subscriptionID)
+
 	} else if subscriptionType == "creator" {
-		// Find creator subscription by Stripe ID
+		// Get all creator subscriptions and filter
 		ref := database.GetFirebaseDB().NewRef("creator_subscriptions")
-		query := ref.OrderByChild("stripeSubID").EqualTo(subscriptionID).LimitToFirst(1)
-
-		var results map[string]models.CreatorSubscription
-		if err := query.Get(ctx, &results); err != nil {
-			return fmt.Errorf("subscription query failed: %v", err)
+		var allSubs map[string]models.CreatorSubscription
+		if err := ref.Get(ctx, &allSubs); err != nil {
+			return fmt.Errorf("failed to fetch creator subscriptions: %w", err)
 		}
 
-		if len(results) == 0 {
-			return fmt.Errorf("subscription not found")
+		// Find matching subscription by Stripe ID
+		for id, sub := range allSubs {
+			if sub.StripeSubID == subscriptionID {
+				subRef := database.GetFirebaseDB().NewRef(fmt.Sprintf("creator_subscriptions/%s", id))
+				return subRef.Update(ctx, map[string]interface{}{
+					"status":    status,
+					"updatedAt": time.Now(),
+				})
+			}
 		}
 
-		// Update the first matching subscription
-		for id := range results {
-			subRef := database.GetFirebaseDB().NewRef(fmt.Sprintf("creator_subscriptions/%s", id))
-			return subRef.Update(ctx, map[string]interface{}{
-				"status":    status,
-				"updatedAt": time.Now(),
-			})
-		}
+		log.Printf("No matching creator subscription found for Stripe ID: %s", subscriptionID)
 	}
 
 	return nil
 }
 
 // handleSubscriptionCanceled processes subscription cancellation events
-func handleSubscriptionCanceled(event stripe.Event) error {
-	var subscription stripe.Subscription
-	err := json.Unmarshal(event.Data.Raw, &subscription)
-	if err != nil {
-		return err
-	}
-
+func handleSubscriptionCanceled(subscription stripe.Subscription) error {
 	// Mark subscription as cancelled in database
 	metadata := subscription.Metadata
 	if metadata == nil {
@@ -348,83 +366,82 @@ func handleSubscriptionCanceled(event stripe.Event) error {
 }
 
 // handlePaymentSucceeded processes successful payment events
-func handlePaymentSucceeded(event stripe.Event) error {
-	var invoice stripe.Invoice
-	err := json.Unmarshal(event.Data.Raw, &invoice)
-	if err != nil {
-		return err
+func handlePaymentSucceeded(invoice stripe.Invoice) error {
+	// Debug logging
+	log.Printf("Processing payment succeeded for invoice: %s", invoice.ID)
+
+	var subscriptionID string
+	if invoice.Subscription != nil {
+		subscriptionID = invoice.Subscription.ID // Access the ID field from the Subscription object
 	}
 
-	// Record payment in database
-	subscriptionID := invoice.Subscription.ID
 	if subscriptionID == "" {
+		log.Printf("No subscription ID found in invoice")
 		return nil // Not a subscription payment
 	}
 
 	ctx := context.Background()
 
-	// Check for platform subscription first
+	// Get all subscriptions and filter in memory instead of using OrderByChild
+	// First check platform subscriptions
 	platformRef := database.GetFirebaseDB().NewRef("premium_subscriptions")
-	platformQuery := platformRef.OrderByChild("stripeSubID").EqualTo(subscriptionID).LimitToFirst(1)
-
 	var platformSubs map[string]models.PremiumSubscription
-	if err := platformQuery.Get(ctx, &platformSubs); err != nil {
-		return err
-	}
+	if err := platformRef.Get(ctx, &platformSubs); err != nil {
+		log.Printf("Error fetching platform subscriptions: %v", err)
+	} else {
+		// Process matching platform subscriptions
+		for id, sub := range platformSubs {
+			if sub.StripeSubID == subscriptionID {
+				// Record payment
+				paymentID := uuid.New().String()
+				payment := models.SubscriptionPayment{
+					ID:              paymentID,
+					SubscriptionID:  id,
+					Amount:          float64(invoice.AmountPaid) / 100.0,
+					Currency:        string(invoice.Currency),
+					Status:          "paid",
+					StripePaymentID: invoice.ID,
+					CreatedAt:       time.Now(),
+				}
 
-	// Process platform subscription if found
-	if len(platformSubs) > 0 {
-		for _, sub := range platformSubs {
-			// Record payment
-			paymentID := uuid.New().String()
-			payment := models.SubscriptionPayment{
-				ID:              paymentID,
-				SubscriptionID:  sub.ID,
-				Amount:          float64(invoice.AmountPaid) / 100.0,
-				Currency:        string(invoice.Currency),
-				Status:          "paid",
-				StripePaymentID: invoice.ID,
-				CreatedAt:       time.Now(),
+				// Save payment record
+				paymentRef := database.GetFirebaseDB().NewRef(fmt.Sprintf("subscription_payments/%s", paymentID))
+				if err := paymentRef.Set(ctx, payment); err != nil {
+					log.Printf("Error recording payment: %v", err)
+				}
+
+				// Update subscription end date
+				newEndDate := time.Now().AddDate(0, 1, 0) // Add 1 month
+				subRef := database.GetFirebaseDB().NewRef(fmt.Sprintf("premium_subscriptions/%s", id))
+				if err := subRef.Update(ctx, map[string]interface{}{
+					"endDate":       newEndDate,
+					"paymentStatus": "paid",
+					"updatedAt":     time.Now(),
+				}); err != nil {
+					log.Printf("Error updating subscription end date: %v", err)
+				}
+
+				return nil
 			}
-
-			// Save payment record
-			paymentRef := database.GetFirebaseDB().NewRef(fmt.Sprintf("subscription_payments/%s", paymentID))
-			if err := paymentRef.Set(ctx, payment); err != nil {
-				log.Printf("Error recording payment: %v", err)
-			}
-
-			// Update subscription end date
-			newEndDate := time.Now().AddDate(0, 1, 0) // Add 1 month
-			subRef := database.GetFirebaseDB().NewRef(fmt.Sprintf("premium_subscriptions/%s", sub.ID))
-			if err := subRef.Update(ctx, map[string]interface{}{
-				"endDate":       newEndDate,
-				"paymentStatus": "paid",
-				"updatedAt":     time.Now(),
-			}); err != nil {
-				log.Printf("Error updating subscription end date: %v", err)
-			}
-
-			return nil
 		}
 	}
 
-	// Check for creator subscription if platform sub not found
+	// Check creator subscriptions
 	creatorRef := database.GetFirebaseDB().NewRef("creator_subscriptions")
-	creatorQuery := creatorRef.OrderByChild("stripeSubID").EqualTo(subscriptionID).LimitToFirst(1)
-
 	var creatorSubs map[string]models.CreatorSubscription
-	if err := creatorQuery.Get(ctx, &creatorSubs); err != nil {
+	if err := creatorRef.Get(ctx, &creatorSubs); err != nil {
+		log.Printf("Error fetching creator subscriptions: %v", err)
 		return err
 	}
 
-	// Process creator subscription if found
-	if len(creatorSubs) > 0 {
-		for _, sub := range creatorSubs {
+	// Process creator subscriptions
+	for id, sub := range creatorSubs {
+		if sub.StripeSubID == subscriptionID {
 			// Record payment
 			paymentID := uuid.New().String()
 			payment := models.SubscriptionPayment{
 				ID:              paymentID,
-				SubscriptionID:  sub.ID,
+				SubscriptionID:  id,
 				Amount:          float64(invoice.AmountPaid) / 100.0,
 				Currency:        string(invoice.Currency),
 				Status:          "paid",
@@ -441,7 +458,7 @@ func handlePaymentSucceeded(event stripe.Event) error {
 
 			// Update subscription end date
 			newEndDate := time.Now().AddDate(0, 1, 0) // Add 1 month
-			subRef := database.GetFirebaseDB().NewRef(fmt.Sprintf("creator_subscriptions/%s", sub.ID))
+			subRef := database.GetFirebaseDB().NewRef(fmt.Sprintf("creator_subscriptions/%s", id))
 			if err := subRef.Update(ctx, map[string]interface{}{
 				"endDate":   newEndDate,
 				"updatedAt": time.Now(),
@@ -470,17 +487,12 @@ func handlePaymentSucceeded(event stripe.Event) error {
 		}
 	}
 
+	log.Printf("No matching subscription found for Stripe ID: %s", subscriptionID)
 	return nil
 }
 
 // handlePaymentFailed processes failed payment events
-func handlePaymentFailed(event stripe.Event) error {
-	var invoice stripe.Invoice
-	err := json.Unmarshal(event.Data.Raw, &invoice)
-	if err != nil {
-		return err
-	}
-
+func handlePaymentFailed(invoice stripe.Invoice) error {
 	subscriptionID := invoice.Subscription.ID
 	if subscriptionID == "" {
 		return nil // Not a subscription payment

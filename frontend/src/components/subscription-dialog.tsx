@@ -1,7 +1,6 @@
 "use client"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog"
 import { Button } from "./ui/button"
-import { useState } from "react"
 import { useUser } from "@clerk/nextjs"
 import { loadStripe } from "@stripe/stripe-js"
 import { toast } from "sonner"
@@ -57,56 +56,29 @@ const CREATOR_TIERS = [
   }
 ]
 
+// Update the interface to include the missing props
 interface SubscriptionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   type: "creator" | "platform" | null
   creatorId: string | null
+  onSubscribe: (type: "creator" | "platform", creatorId?: string) => Promise<void>
+  loading: boolean
 }
 
 export function SubscriptionDialog({ 
   open, 
   onOpenChange, 
   type,
-  creatorId 
+  creatorId,
+  onSubscribe,
+  loading 
 }: SubscriptionDialogProps) {
-  const [loading, setLoading] = useState(false)
   const { user } = useUser()
 
   const handleSubscribe = async (tierId: string) => {
     if (!user) return
-    setLoading(true)
-
-    try {
-      const stripe = await stripePromise
-      if (!stripe) {
-        throw new Error("Stripe failed to initialize")
-      }
-
-      const response = await fetch("/api/create-subscription", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tierId,
-          type,
-          creatorId,
-          userId: user.id,
-          subscriptionType: type === "creator" ? "individual" : "platform"
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to create subscription")
-      }
-
-      const { sessionId } = await response.json()
-      await stripe?.redirectToCheckout({ sessionId })
-    } catch (error) {
-      console.error("Subscription error:", error)
-      toast.error("Failed to create subscription")
-    } finally {
-      setLoading(false)
-    }
+    await onSubscribe(type!, creatorId || undefined)
   }
 
   const tiers = type === "platform" ? PLATFORM_TIERS : CREATOR_TIERS
