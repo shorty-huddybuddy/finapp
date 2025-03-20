@@ -14,9 +14,9 @@ import (
 
 	"cloud.google.com/go/firestore"
 	"github.com/gofiber/fiber/v2"
-	"github.com/stripe/stripe-go/v72"
-	"github.com/stripe/stripe-go/v72/checkout/session"
-	"github.com/stripe/stripe-go/v72/price"
+	"github.com/stripe/stripe-go/v81"                  // Update to v81
+	"github.com/stripe/stripe-go/v81/checkout/session" // Update to v81
+	"github.com/stripe/stripe-go/v81/price"            // Update to v81
 )
 
 // CheckSubscriptionAccessRequest holds the data for subscription access check
@@ -128,7 +128,10 @@ func CreateSubscription(c *fiber.Ctx) error {
 	log.Printf("[CreateSubscription] Stripe key configured: %s...", stripeKey[:8])
 
 	// Get price ID based on tier
+
+	fmt.Println("fetching hte price id")
 	priceID := getPriceIDForTier(req.TierID)
+	fmt.Println("fetching done")
 	if priceID == "" {
 		log.Printf("[CreateSubscription] Invalid tier ID: %s", req.TierID)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -157,7 +160,7 @@ func CreateSubscription(c *fiber.Ctx) error {
 		metadata["creatorId"] = req.CreatorID
 	}
 
-	// Create the Stripe checkout session
+	// Create the Stripe checkout session with v81
 	params := &stripe.CheckoutSessionParams{
 		PaymentMethodTypes: []*string{
 			stripe.String("card"),
@@ -169,12 +172,10 @@ func CreateSubscription(c *fiber.Ctx) error {
 			},
 		},
 		Mode:              stripe.String(string(stripe.CheckoutSessionModeSubscription)),
-		SuccessURL:        stripe.String("http://localhost:3000/subscription/success?session_id={CHECKOUT_SESSION_ID}"),
+		SuccessURL:        stripe.String("http://localhost:3000/subscription/success?session_id={CHECKOUT_SESSION_ID}&type=" + req.Type),
 		CancelURL:         stripe.String("http://localhost:3000/subscription/cancel"),
 		ClientReferenceID: stripe.String(userID),
-		SubscriptionData: &stripe.CheckoutSessionSubscriptionDataParams{
-			Metadata: metadata,
-		},
+		Metadata:          metadata, // Use Metadata directly instead of SubscriptionData in v81
 	}
 
 	s, err := session.New(params)
@@ -226,31 +227,19 @@ func getUserPlatformSubscription(userID string) (*models.PremiumSubscription, er
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// Try both userID and userId cases
+	// Instead of using OrderByChild, fetch all and filter in memory
 	ref := database.GetFirebaseDB().NewRef("premium_subscriptions")
-	var subs map[string]models.PremiumSubscription
+	var allSubs map[string]models.PremiumSubscription
 
-	// First try with userID
-	err := ref.OrderByChild("userID").EqualTo(userID).Get(ctx, &subs)
-	if err != nil {
-		// Try with userId if userID fails
-		err = ref.OrderByChild("userId").EqualTo(userID).Get(ctx, &subs)
-		if err != nil {
-			log.Printf("[getUserPlatformSubscription] Both index queries failed, falling back to full fetch")
-			// Fall back to full fetch
-			err = ref.Get(ctx, &subs)
-			if err != nil {
-				return nil, fmt.Errorf("subscription query failed: %w", err)
-			}
-		}
+	if err := ref.Get(ctx, &allSubs); err != nil {
+		return nil, fmt.Errorf("subscription query failed: %w", err)
 	}
 
-	// Find active platform subscription
-	for id, sub := range subs {
+	// Filter in memory
+	for _, sub := range allSubs {
 		if (sub.UserID == userID || sub.UserId == userID) &&
 			sub.Type == "platform" &&
 			sub.Status == "active" {
-			log.Printf("[getUserPlatformSubscription] Found active platform subscription ID: %s", id)
 			return &sub, nil
 		}
 	}
@@ -282,38 +271,23 @@ func getUserCreatorSubscription(userID, creatorID string) (*models.CreatorSubscr
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	log.Printf("[getUserCreatorSubscription] Querying subscription for userID: %s, creatorID: %s", userID, creatorID)
+	// Instead of using OrderByChild, fetch all and filter in memory
 	ref := database.GetFirebaseDB().NewRef("creator_subscriptions")
-
-	// Query subscriptions using Realtime Database
 	var allSubs map[string]models.CreatorSubscription
 
-	var err error
-	// First try with index
-	err = ref.OrderByChild("subscriberId").EqualTo(userID).Get(ctx, &allSubs)
-
-	// If index error, fall back to getting all subscriptions and filtering
-	if err != nil && isIndexError(err) {
-		log.Printf("[getUserCreatorSubscription] Index error, falling back to full fetch: %v", err)
-
-		// Get all subscriptions and filter in memory
-		err = ref.Get(ctx, &allSubs)
-		if err != nil {
-			return nil, fmt.Errorf("subscription query failed: %w", err)
-		}
-	} else if err != nil {
+	if err := ref.Get(ctx, &allSubs); err != nil {
 		return nil, fmt.Errorf("subscription query failed: %w", err)
 	}
 
-	// Find active subscription for specific creator and user
-	for id, sub := range allSubs {
-		if sub.SubscriberID == userID && sub.CreatorID == creatorID && sub.Status == "active" {
-			log.Printf("[getUserCreatorSubscription] Found active creator subscription ID: %s", id)
+	// Filter in memory
+	for _, sub := range allSubs {
+		if sub.SubscriberID == userID &&
+			sub.CreatorID == creatorID &&
+			sub.Status == "active" {
 			return &sub, nil
 		}
 	}
 
-	log.Printf("[getUserCreatorSubscription] No active creator subscription found for userID: %s to creatorID: %s", userID, creatorID)
 	return nil, nil
 }
 
@@ -366,6 +340,8 @@ func isTierSufficient(userTier, requiredTier string) bool {
 
 // getPriceIDForTier returns the Stripe price ID for a tier
 func getPriceIDForTier(tierID string) string {
+
+	fmt.Println("tierID", tierID)
 	priceID := config.StripePriceConfig[tierID]
 	if priceID == "" {
 		log.Printf("[getPriceIDForTier] No price ID found for tier: %s", tierID)
