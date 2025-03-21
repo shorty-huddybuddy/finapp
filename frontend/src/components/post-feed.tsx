@@ -12,6 +12,12 @@ import { useAuth, useUser } from "@clerk/nextjs"
 import { Spinner } from "@/components/ui/spinner"
 import { toast } from "sonner"  
 import { useRouter } from 'next/navigation'
+import { SubscriptionDialog } from "./subscription-dialog"
+import { loadStripe } from "@stripe/stripe-js"
+import { useExtendedUser } from "@/hooks/useExtendedUser"
+import { ImagePreview } from "@/components/image-preview"
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 type Post = {
   id: string
   author: {
@@ -28,6 +34,10 @@ type Post = {
   isPremiumPost: boolean
   timestamp: string
   liked: boolean
+  requiredSubscriptionTier?: string
+  minimumTierRequired?: string
+  hasAccess: boolean
+  creatorId?: string
 }
 
 const POSTS_PER_PAGE = 10  // Number of posts to load each timeconst POSTS_PER_PAGE = 10  // Number of posts to load each time
@@ -46,7 +56,17 @@ export function PostFeed() {
   const { user } = useUser()
   const observer = useRef<IntersectionObserver | null>(null);
   const router  = useRouter();
+  const { isPremium, subscriptions } = useExtendedUser()
   
+  // Add subscription dialog states
+  const [showSubscribeDialog, setShowSubscribeDialog] = useState(false)
+  const [selectedCreator, setSelectedCreator] = useState<string | null>(null)
+  const [subscriptionType, setSubscriptionType] = useState<"creator" | "platform" | null>(null)
+
+  // Add image preview states
+  const [imagePreviewOpen, setImagePreviewOpen] = useState(false)
+  const [currentImageUrl, setCurrentImageUrl] = useState<string>("")
+
   // Add a cleanup effect
   useEffect(() => {
     return () => {
@@ -58,6 +78,32 @@ export function PostFeed() {
       }
     }
   }, [])
+
+  const canViewPremiumContent = useCallback((post: Post) => {
+    // If user has platform premium, they can see all content
+    if (isPremium) return true;
+
+    // Check if post is premium
+    const isPremiumContent = post.isPremiumPost || post.author.isPremium;
+    if (!isPremiumContent) return true;
+
+    // Authors can always see their own posts
+    if (user && `@${user.username || user.id}` === post.author.handle) {
+      return true;
+    }
+
+    // Check if user has an active subscription to this creator
+    if (subscriptions && post.author.handle) {
+      const creatorId = post.author.handle.replace('@', '');
+      const hasCreatorSub = subscriptions.some(
+        sub => sub.creatorId === creatorId && sub.status === 'active'
+      );
+      if (hasCreatorSub) return true;
+    }
+
+    // For premium content, check server-provided access flag
+    return post.hasAccess === true;
+  }, [user, isPremium, subscriptions]);
 
   const fetchPosts = useCallback(async () => {
     if (loading || !hasMore) return;
@@ -82,8 +128,7 @@ export function PostFeed() {
         throw new Error('Failed to fetch posts')
       }
 
-      const fetchedPosts = await response.json()
-      
+      const fetchedPosts = await response.json()      
       // Filter out any posts we've already seen
       const uniquePosts = fetchedPosts.filter((post: Post) => {
         if (seenPostIds.current.has(post.id)) {
@@ -207,41 +252,6 @@ export function PostFeed() {
     }
   };
 
-  // Add this effect to fetch initial like status for posts
-  useEffect(() => {
-    const fetchLikeStatus = async () => {
-      if (!posts.length) return;
-      
-      const token = await getToken();
-      if (!token) return;
-
-      try {
-        const updatedPosts = await Promise.all(
-          posts.map(async (post) => {
-            const response = await fetch(`http://localhost:8080/api/social/posts/${post.id}/like/status`, {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-              }
-            });
-            
-            
-            if (response.ok) {
-              const { liked } = await response.json();
-              return { ...post, liked };
-            }
-            return post;
-          })
-        );
-
-        setPosts(updatedPosts);
-      } catch (error) {
-        console.error('Error fetching like status:', error);
-      }
-    };
-
-    fetchLikeStatus();
-  }, [posts.length, getToken]);
-
   // Add delete handler
   const handleDeletePost = async (postId: string, authorHandle: string) => {
     try {
@@ -279,10 +289,87 @@ export function PostFeed() {
     }
   };
 
+  const handleSubscribe = async (type: "creator" | "platform", creatorId?: string) => {
+    if (!user) {
+      toast.error("Please sign in to subscribe");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const token = await getToken();
+      
+      // Add validation for creator subscriptions
+      if (type === "creator" && !creatorId) {
+        toast.error("Creator ID is required for creator subscriptions");
+        return;
+      }
+
+      // Debug log
+      console.log("Creating subscription:", { type, creatorId, tierId: type === 'platform' ? 'premium-monthly' : 'creator-basic' });
+
+      const response = await fetch('http://localhost:8080/api/subscriptions/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          type,
+          creatorId,
+          tierId: type === 'platform' ? 'premium-monthly' : 'creator-basic'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create subscription');
+      }
+
+      const { sessionId } = await response.json();
+      
+      // Redirect to Stripe checkout
+      const stripe = await stripePromise;
+      if (!stripe) {
+        throw new Error('Stripe failed to load');
+      }
+
+      const { error } = await stripe.redirectToCheckout({ sessionId });
+      if (error) {
+        throw error;
+      }
+
+    } catch (error) {
+      console.error('Subscription error:', error);
+      toast.error('Failed to start subscription process');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Initial load
   useEffect(() => {
     fetchPosts()
   }, [fetchPosts])
+
+  const handlePostClick = (e: React.MouseEvent, post: Post) => {
+    // Prevent navigation if premium content and no access
+    const hasAccess = canViewPremiumContent(post);
+    const isPremiumContent = post.isPremiumPost || post.author.isPremium;
+
+    if (isPremiumContent && !hasAccess) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
+    router.push(`/social/post/${post.id}`);
+  };
+
+  const handleImageClick = (e: React.MouseEvent, imageUrl: string) => {
+    e.stopPropagation()
+    setCurrentImageUrl(imageUrl)
+    setImagePreviewOpen(true)
+  }
 
   if (error) return <div className="p-4 text-center text-red-500">{error}</div>
   
@@ -301,12 +388,15 @@ export function PostFeed() {
         <div className="text-center text-muted-foreground">No posts yet</div>
       ) : (
         <>
-          {posts.map((post, index) => (
-            <div
-              key={getUniqueKey(post, index)}
-              ref={index === posts.length - 1 ? lastPostElementRef : undefined}
-            >
-              <Card className="border-border hover:border-blue-500 transition-colors cursor-pointer" onClick={() => router.push(`/social/post/${post.id}`)}>
+          {posts.map((post, index) => {
+            const hasAccess = canViewPremiumContent(post);
+            const isPremiumContent = post.isPremiumPost || post.author.isPremium;
+            
+            const postContent = (
+              <Card 
+                className="border-border hover:border-blue-500 transition-colors cursor-pointer relative" 
+                onClick={(e) => handlePostClick(e, post)}  // Replace the direct router.push with handlePostClick
+              >
                 <CardHeader className="flex flex-row items-center space-y-0 gap-3">
                   <Avatar>
                     <AvatarImage src={post.author.avatar} />
@@ -357,18 +447,55 @@ export function PostFeed() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <p className="text-sm whitespace-pre-line">{post.content}</p>
-                  {post.image && (
-                    <div className="relative aspect-video w-full overflow-hidden rounded-lg">
-                      <Image src={post.image || "/placeholder.svg"} alt="Post image" fill className="object-cover" />
-                    </div>
-                  )}
-                  {post.isPremiumPost && (
-                    <div>
-                      <Badge variant="secondary" className="bg-yellow-100/10">
-                        <Star className="w-3 h-3 mr-1 text-yellow-500" />
-                        Premium Content
-                      </Badge>
+                  <div className={`${!hasAccess && isPremiumContent ? 'blur-md select-none' : ''}`}>
+                    <p className="text-sm whitespace-pre-line">{post.content}</p>
+                    {post.image && (
+                      <div 
+                        className="relative aspect-video w-full overflow-hidden rounded-lg mt-2"
+                        onClick={(e) => handleImageClick(e, post.image || "")}
+                      >
+                        <Image 
+                          src={post.image || "/placeholder.svg"} 
+                          alt="Post image" 
+                          fill 
+                          className="object-cover cursor-pointer hover:brightness-90 transition-all" 
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Premium Content Overlay */}
+                  {isPremiumContent && !hasAccess && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm z-10">
+                      <div className="text-center p-6">
+                        <div className="mb-4">
+                          <Badge className="mb-2">
+                            <Star className="w-3 h-3 mr-1 text-yellow-500" />
+                            Premium Content
+                          </Badge>
+                          <h3 className="text-lg font-semibold text-yellow-900">
+                            Subscribe to {post.author.name}
+                          </h3>
+                          <p className="text-sm text-yellow-700 mt-1">
+                            Get access to all premium content
+                          </p>
+                        </div>
+                        
+                        <div className="flex gap-2 justify-center">
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // Use the handle without @ as the creatorId
+                              const creatorId = post.author.handle.replace('@', '');
+                              handleSubscribe("creator", creatorId);
+                            }}
+                            className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white"
+                            disabled={loading}
+                          >
+                            {loading ? "Processing..." : "Subscribe Now"}
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </CardContent>
@@ -397,8 +524,17 @@ export function PostFeed() {
                   </div>
                 </CardFooter>
               </Card>
-            </div>
-          ))}
+            );
+
+            return (
+              <div
+                key={getUniqueKey(post, index)}
+                ref={index === posts.length - 1 ? lastPostElementRef : undefined}
+              >
+                {postContent}
+              </div>
+            );
+          })}
           
           {/* Bottom loading spinner */}
           {loading && (
@@ -408,7 +544,22 @@ export function PostFeed() {
           )}
         </>
       )}
+      {/* Add SubscriptionDialog at the bottom of the component */}
+      <SubscriptionDialog 
+        open={showSubscribeDialog}
+        onOpenChange={setShowSubscribeDialog}
+        type={subscriptionType}
+        creatorId={selectedCreator}
+        onSubscribe={handleSubscribe}
+        loading={loading}
+      />
+      {/* Add ImagePreview component */}
+      <ImagePreview
+        open={imagePreviewOpen}
+        onOpenChange={setImagePreviewOpen}
+        images={[currentImageUrl].filter(Boolean)} // Filter out empty strings
+        initialIndex={0}
+      />
     </div>
   )
 }
-

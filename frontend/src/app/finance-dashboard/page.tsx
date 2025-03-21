@@ -84,8 +84,10 @@ export default function Dashboard() {
   }
 
   return (
+    <div>
+    <Navbar/>
     <div className="min-h-screen bg-white text-gray-800 p-4">
-      <Navbar/>
+     
       <br /><br/>
       {/* New Botpress Chatbot component */}
       <Chatbot />
@@ -145,7 +147,9 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-      <Footer/>
+     
+    </div>
+    <Footer/>
     </div>
   )
 }
