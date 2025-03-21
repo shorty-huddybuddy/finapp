@@ -96,122 +96,127 @@ export function SearchHeader() {
   };
 
   return (
-    <div className="p-4 bg-background/80 backdrop-blur-sm border-b border-border ">
-      <div className="flex flex-col gap-4 max-w-2xl mx-auto">
+    <div className="bg-white rounded-xl">
+      <div className="flex flex-col gap-6 p-4">
         {/* Search Input */}
-        <div className="relative flex-1 w-full">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <Input placeholder="Search users or posts..." className="pl-10 w-full bg-muted" />
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <Input 
+            placeholder="Search users or posts..." 
+            className="pl-10 w-full bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 h-11 rounded-lg"
+          />
         </div>
 
         {/* Post Creation Form */}
-        <div className="w-full">
-          <div className="flex flex-col gap-4 border rounded-lg p-2 sm:p-4">
-            <Textarea 
-              placeholder="What's on your mind?" 
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="min-h-[60px] sm:min-h-[100px] resize-y max-h-[300px]"
-            />
+        <div className="space-y-4">
+          <Textarea 
+            placeholder="Share your trading insights..." 
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            className="min-h-[120px] resize-none bg-gray-50 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-base p-4"
+          />
 
-            {/* Premium Post Options - available to all users now */}
-            {user && (
-              <div className="flex flex-col gap-2 p-2 bg-muted/50 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="premium-toggle" className="font-medium">
-                    Make this a premium post
-                  </Label>
-                  <Switch
-                    id="premium-toggle"
-                    checked={isPremiumPost}
-                    onCheckedChange={setIsPremiumPost}
-                  />
-                </div>
-
-                {isPremiumPost && (
-                  <Select value={requiredTier} onValueChange={setRequiredTier}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select required tier" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="basic">Basic Tier ($4.99)</SelectItem>
-                      <SelectItem value="pro">Pro Tier ($9.99)</SelectItem>
-                      <SelectItem value="vip">VIP Tier ($19.99)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
-            )}
-
-            {/* Image Preview */}
-            {selectedImage && (
-              <div className="relative">
-                <img 
-                  src={selectedImage} 
-                  alt="Selected" 
-                  className="max-h-[150px] sm:max-h-[200px] rounded-lg object-cover w-full" 
+          {/* Premium Post Options */}
+          {user && (
+            <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="premium-toggle" className="font-medium">
+                  Make this a premium post
+                </Label>
+                <Switch
+                  id="premium-toggle"
+                  checked={isPremiumPost}
+                  onCheckedChange={setIsPremiumPost}
                 />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full"
-                  onClick={() => setSelectedImage(null)}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
               </div>
-            )}
 
+              {isPremiumPost && (
+                <Select value={requiredTier} onValueChange={setRequiredTier}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select required tier" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="basic">Basic Tier ($4.99)</SelectItem>
+                    <SelectItem value="pro">Pro Tier ($9.99)</SelectItem>
+                    <SelectItem value="vip">VIP Tier ($19.99)</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          )}
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2">
-              <div className="flex gap-1 sm:gap-2">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleImageChange}
-                  accept="image/*"
-                  className="hidden"
-                />
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="text-blue-500 hover:text-blue-600"
-                  onClick={handleImageClick}
-                >
-                  <Image className="w-4 h-4 sm:w-5 sm:h-5" />
-                </Button>
-                
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="ghost" size="icon" className="text-blue-500 hover:text-blue-600">
-                      <Smile className="w-4 h-4 sm:w-5 sm:h-5" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-full p-0 border-none">
-                    <Picker 
-                      data={data} 
-                      onEmojiSelect={handleEmojiSelect}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+          {/* Image Preview */}
+          {selectedImage && (
+            <div className="relative rounded-lg overflow-hidden bg-gray-50 p-2">
+              <img 
+                src={selectedImage} 
+                alt="Selected" 
+                className="max-h-[200px] rounded-lg object-cover w-full" 
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white rounded-full"
+                onClick={() => setSelectedImage(null)}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-3 pt-4 border-t border-gray-100">
+            <div className="flex gap-2">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageChange}
+                accept="image/*"
+                className="hidden"
+              />
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                onClick={handleImageClick}
+              >
+                <Image className="w-5 h-5 mr-2" />
+                Add Image
+              </Button>
               
-              <div className="ml-auto">
-                <Button 
-                  onClick={handlePost}
-                  disabled={!content.trim() || isLoading}
-                  size="sm"
-                  className="sm:text-base"
-                >
-                  {isLoading ? "Posting..." : "Post"}
-                </Button>
-              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                  >
+                    <Smile className="w-5 h-5 mr-2" />
+                    Add Emoji
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0 border-none shadow-xl">
+                  <Picker 
+                    data={data} 
+                    onEmojiSelect={handleEmojiSelect}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            
+            <div className="ml-auto">
+              <Button 
+                onClick={handlePost}
+                disabled={!content.trim() || isLoading}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8"
+              >
+                {isLoading ? "Posting..." : "Post"}
+              </Button>
             </div>
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
