@@ -11,6 +11,8 @@ import { useAuth } from "@clerk/nextjs"
 import { toast } from "sonner"  
 import { useUser } from "@clerk/nextjs"
 import { useExtendedUser } from "@/hooks/useExtendedUser"
+import { Search } from "lucide-react"
+
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
 export function RightSidebar() {
@@ -82,8 +84,18 @@ export function RightSidebar() {
 
   if (isPremium) {
     return (
-      <aside className="w-[280px] p-4 lg:block hidden">
+      <aside className="w-80 h-screen p-4 bg-gradient-to-b from-blue-900/5 to-blue-800/5 border-l border-gray-200">
         <div className="sticky top-4">
+          {/* Search Bar */}
+          <div className="relative mb-6">
+            <input
+              type="text"
+              placeholder="Search..."
+              className="w-full pl-10 pr-4 py-2 bg-white rounded-full border border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          </div>
+
           <Card className="mb-4">
             <CardHeader>
               <CardTitle>Premium Member</CardTitle>
@@ -146,8 +158,18 @@ export function RightSidebar() {
   }
 
   return (
-    <aside className="w-[280px] p-4 lg:block hidden">
+    <aside className="w-80 h-screen p-4 bg-gradient-to-b from-blue-900/5 to-blue-800/5 border-l border-gray-200">
       <div className="sticky top-4">
+        {/* Search Bar */}
+        <div className="relative mb-6">
+          <input
+            type="text"
+            placeholder="Search..."
+            className="w-full pl-10 pr-4 py-2 bg-white rounded-full border border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+          />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+        </div>
+
         <Card className="mb-4">
           <CardHeader>
             <CardTitle>Premium Access</CardTitle>
