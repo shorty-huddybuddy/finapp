@@ -33,23 +33,27 @@ export default function RootLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-b from-blue-900/5 to-blue-800/5 border-l border-gray-200">
-      <div className="fixed left-0 top-0 bottom-0">
+    <div className="flex min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      {/* Left Sidebar */}
+      <div className="fixed left-0 top-0 bottom-0 z-30">
         <Sidebar />
       </div>
+
+      {/* Main Content */}
       <motion.main
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: 20 }}
         transition={{ duration: 0.3, ease: "easeOut" }}
-        className="flex-1 ml-16 md:ml-64 mr-0 lg:mr-80 p-6"
+        className="flex-1 ml-16 md:ml-64 mr-0 lg:mr-80 min-h-screen"
       >
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto px-4 py-6">
           {!isPostDetailPage && (
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
+              className="mb-6 rounded-xl shadow-sm bg-white border border-gray-100"
             >
               <SearchHeader />
             </motion.div>
@@ -58,16 +62,21 @@ export default function RootLayout({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="mt-6"
           >
             {children}
           </motion.div>
         </div>
       </motion.main>
-      <div className="fixed right-0 top-0 bottom-0 hidden lg:block ">
+
+      {/* Right Sidebar */}
+      <div className="fixed right-0 top-0 bottom-0 hidden lg:block border-l border-gray-200 bg-white/50 backdrop-blur-sm z-20">
         <RightSidebar />
       </div>
-      <ScrollToTop />
+
+      {/* Scroll To Top */}
+      <div className="z-40">
+        <ScrollToTop />
+      </div>
     </div>
   )
 }

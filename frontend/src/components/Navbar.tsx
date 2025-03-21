@@ -10,9 +10,11 @@ import {
   Brain, 
   Wallet, 
   GraduationCap,
-  BarChart
+  BarChart,
+  LineChart as ChartLineUp  // Use LineChart as ChartLineUp since the icon doesn't exist
 } from "lucide-react";
 import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import { motion } from "framer-motion";
 
 import Head from 'next/head';
 
@@ -75,53 +77,77 @@ export function Navbar() {
     setIsMenuOpen(!isMenuOpen);
   };
 
+  const navVariants = {
+    hidden: { opacity: 0, y: -20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.3,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: -20 },
+    visible: { opacity: 1, y: 0 },
+  };
+
   return(
     <>
-
       <Head>
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
       </Head>
       
       <div className="bg-gradient-to-r from-blue-700 to-blue-900 text-white shadow-lg relative navbar-font">
-        {/* Desktop and Mobile Header */}
-        <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
-          
-          
-          <div className="flex items-center space-x-3">
+        <motion.nav 
+          initial="hidden"
+          animate="visible"
+          variants={navVariants}
+          className="container mx-auto px-6 py-4 flex justify-between items-center"
+        >
+          <motion.div variants={itemVariants} className="flex items-center space-x-3">
             <LineChart className="h-7 w-7 text-blue-200" />
             <span className="text-2xl font-bold tracking-tight">FinanceHub</span>
-          </div>
+          </motion.div>
           
           {/* Mobile menu button */}
-          <button 
+          <motion.button 
+            variants={itemVariants}
             className="md:hidden focus:outline-none" 
             onClick={toggleMenu}
             aria-label="Toggle menu"
           >
             {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
+          </motion.button>
           
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">  
-            <a 
+          <motion.div variants={navVariants} className="hidden md:flex items-center space-x-8">  
+            {/* Replace individual nav links with motion components */}
+            <motion.a 
+              variants={itemVariants}
+              whileHover={{ scale: 1.05, color: "#fff" }}
               href="/" 
-              className="text-blue-100 hover:text-white transition-all duration-300 transform hover:scale-105 font-medium no-underline flex items-center"
+              className="text-blue-100 transition-all duration-300 font-medium no-underline flex items-center"
             >
               <LineChart className="w-4 h-4 mr-1" />
               Home
-            </a>
+            </motion.a>
             
             {/* Add Social Trading Link */}
-            <a 
+            <motion.a 
+              variants={itemVariants}
+              whileHover={{ scale: 1.05, color: "#fff" }}
               href="/social" 
-              className="text-blue-100 hover:text-white transition-all duration-300 transform hover:scale-105 font-medium no-underline flex items-center"
+              className="text-blue-100 transition-all duration-300 font-medium no-underline flex items-center"
             >
               <Users className="w-4 h-4 mr-1" />
               Social Trading
-            </a>
+            </motion.a>
             
             {/* Custom dropdown implementation */}
-            <div className="relative group" style={{zIndex: 1050}}>
+            <motion.div variants={itemVariants} className="relative group" style={{zIndex: 1050}}>
               <button className="flex items-center text-blue-100 hover:text-white transition-all duration-300 transform hover:scale-105 font-medium">
                 <BarChart className="w-4 h-4 mr-1" />
                 Market Data
@@ -134,40 +160,57 @@ export function Navbar() {
                 <a href="/stock-dashboard" className="block px-4 py-2 text-gray-800 hover:bg-blue-100 no-underline">Stocks</a>
                 <a href="/finance-dashboard" className="block px-4 py-2 text-gray-800 hover:bg-blue-100 no-underline">Cryptocurrencies</a>
               </div>
-            </div>
+            </motion.div>
             
-            <a 
+            <motion.a 
+              variants={itemVariants}
+              whileHover={{ scale: 1.05, color: "#fff" }}
               href="/calendar" 
-              className="text-blue-100 hover:text-white transition-all duration-300 transform hover:scale-105 font-medium no-underline flex items-center"
+              className="text-blue-100 transition-all duration-300 font-medium no-underline flex items-center"
             >
               <Calendar className="w-4 h-4 mr-1" />
               Calendar
-            </a>
-            <a 
+            </motion.a>
+            <motion.a 
+              variants={itemVariants}
+              whileHover={{ scale: 1.05, color: "#fff" }}
               href="/ai_landing" 
-              className="text-blue-100 hover:text-white transition-all duration-300 transform hover:scale-105 font-medium no-underline flex items-center"
+              className="text-blue-100 transition-all duration-300 font-medium no-underline flex items-center"
             >
               <Brain className="w-4 h-4 mr-1" />
               AI Tools
-            </a>
-            <a 
+            </motion.a>
+            <motion.a 
+              variants={itemVariants}
+              whileHover={{ scale: 1.05, color: "#fff" }}
               href="/portfolio" 
-              className="text-blue-100 hover:text-white transition-all duration-300 transform hover:scale-105 font-medium no-underline flex items-center"
+              className="text-blue-100 transition-all duration-300 font-medium no-underline flex items-center"
             >
               <Wallet className="w-4 h-4 mr-1" />
               Portfolio
-            </a>
-            <a 
+            </motion.a>
+            <motion.a 
+              variants={itemVariants}
+              whileHover={{ scale: 1.05, color: "#fff" }}
               href="/education" 
-              className="text-blue-100 hover:text-white transition-all duration-300 transform hover:scale-105 font-medium no-underline flex items-center"
+              className="text-blue-100 transition-all duration-300 font-medium no-underline flex items-center"
             >
               <GraduationCap className="w-4 h-4 mr-1" />
               Education
-            </a>
-          </div>
+            </motion.a>
+            <motion.a 
+              variants={itemVariants}
+              whileHover={{ scale: 1.05, color: "#fff" }}
+              href="/prediction" 
+              className="text-blue-100 transition-all duration-300 font-medium no-underline flex items-center"
+            >
+              <ChartLineUp className="w-4 h-4 mr-1" />
+              Predictions
+            </motion.a>
+          </motion.div>
 
           {/* Desktop Auth Button - Enhanced */}
-          <div className="hidden md:flex items-center">
+          <motion.div variants={itemVariants} className="hidden md:flex items-center">
             <SignedOut>
               <SignInButton mode="modal">
                 <button className="bg-white text-blue-700 px-6 py-2 rounded-full font-semibold hover:bg-blue-50 hover:shadow-lg transition-all duration-300">
@@ -194,11 +237,19 @@ export function Navbar() {
                 }}
               />
             </SignedIn>
-          </div>
-        </nav>
+          </motion.div>
+        </motion.nav>
         
-        {/* Mobile menu with improved dropdown */}
-        <div className={`md:hidden ${isMenuOpen ? 'block' : 'hidden'} bg-blue-800 pb-4 px-6 shadow-lg`} style={{zIndex: 1040}}>
+        {/* Mobile menu with improved animation */}
+        <motion.div 
+          animate={{ 
+            height: isMenuOpen ? "auto" : 0,
+            opacity: isMenuOpen ? 1 : 0
+          }}
+          transition={{ duration: 0.3 }}
+          className={`md:hidden overflow-hidden bg-blue-800 shadow-lg`} 
+          style={{zIndex: 1040}}
+        >
           <a href="/" className="block py-3 text-blue-100 hover:text-white border-b border-blue-700 no-underline">
             <div className="flex items-center">
               <LineChart className="w-4 h-4 mr-2" />
@@ -251,6 +302,12 @@ export function Navbar() {
               Education
             </div>
           </a>
+          <a href="/prediction" className="block py-3 text-blue-100 hover:text-white border-b border-blue-700 no-underline">
+            <div className="flex items-center">
+              <ChartLineUp className="w-4 h-4 mr-2" />
+              Predictions
+            </div>
+          </a>
           
           {/* Mobile Auth Button - Enhanced */}
           <div className="mt-4 flex justify-center">
@@ -281,7 +338,7 @@ export function Navbar() {
               />
             </SignedIn>
           </div>
-        </div>
+        </motion.div>
       </div>
     </>
   );
