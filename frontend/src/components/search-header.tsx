@@ -96,7 +96,7 @@ export function SearchHeader() {
   };
 
   return (
-    <div className="p-4 bg-background/80 backdrop-blur-sm border-b border-border">
+    <div className="p-4 bg-background/80 backdrop-blur-sm border-b border-border ">
       <div className="flex flex-col gap-4 max-w-2xl mx-auto">
         {/* Search Input */}
         <div className="relative flex-1 w-full">
