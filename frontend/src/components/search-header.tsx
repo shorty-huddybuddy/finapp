@@ -8,15 +8,22 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import data from '@emoji-mart/data'
 import Picker from '@emoji-mart/react'
 import { usePostForm } from "@/hooks/usePostForm"
-import { useUser, useAuth } from "@clerk/nextjs"  // Add this import
+import { useUser, useAuth } from "@clerk/nextjs"
+import { Switch } from "@/components/ui/switch"
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
+import { useState } from "react"
+import { useExtendedUser } from "@/hooks/useExtendedUser"
 
 interface ErrorResponse {
   error: string;
 }
 
 export function SearchHeader() {
-  const { user } = useUser()
-  const { getToken } = useAuth()  // Add this hook
+  const {user } = useUser()
+  const { isPremium } = useExtendedUser()
+  const { getToken } = useAuth()
+
   const {
     content,
     setContent,
@@ -31,6 +38,9 @@ export function SearchHeader() {
     setIsLoading
   } = usePostForm()
 
+  const [isPremiumPost, setIsPremiumPost] = useState(false)
+  const [requiredTier, setRequiredTier] = useState("basic")
+
   const handlePost = async () => {
     if (!content.trim() || isLoading || !user) {
       return;
@@ -39,8 +49,8 @@ export function SearchHeader() {
     try {
       setIsLoading(true);
       
-      // Get the token
       const token = await getToken();
+      console.log(token)
       if (!token) {
         throw new Error('Not authenticated');
       }
@@ -54,7 +64,8 @@ export function SearchHeader() {
         },
         content: content.trim(),
         image: selectedImage || "",
-        isPremiumPost: false
+        isPremiumPost: isPremiumPost,
+        requiredSubscriptionTier: isPremiumPost ? requiredTier : undefined
       };
 
       console.log("Sending post data:", postData); 
@@ -103,6 +114,35 @@ export function SearchHeader() {
               className="min-h-[60px] sm:min-h-[100px] resize-y max-h-[300px]"
             />
 
+            {/* Premium Post Options - available to all users now */}
+            {user && (
+              <div className="flex flex-col gap-2 p-2 bg-muted/50 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="premium-toggle" className="font-medium">
+                    Make this a premium post
+                  </Label>
+                  <Switch
+                    id="premium-toggle"
+                    checked={isPremiumPost}
+                    onCheckedChange={setIsPremiumPost}
+                  />
+                </div>
+
+                {isPremiumPost && (
+                  <Select value={requiredTier} onValueChange={setRequiredTier}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select required tier" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="basic">Basic Tier ($4.99)</SelectItem>
+                      <SelectItem value="pro">Pro Tier ($9.99)</SelectItem>
+                      <SelectItem value="vip">VIP Tier ($19.99)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            )}
+
             {/* Image Preview */}
             {selectedImage && (
               <div className="relative">
@@ -121,6 +161,7 @@ export function SearchHeader() {
                 </Button>
               </div>
             )}
+
 
             {/* Action Buttons */}
             <div className="flex items-center gap-2">

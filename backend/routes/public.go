@@ -27,6 +27,23 @@ func RegisterRoutes(app *fiber.App) {
 	app.Get("/api/calender/risk-alerts", handlers.FetchRiskAlerts)
 	app.Get("/api/calender/goals", handlers.FetchGoals)
 
+	// Subscription routes
+	subscriptions := app.Group("/api/subscriptions")
+	subscriptions.Use(middleware.AuthMiddleware())
+	subscriptions.Post("/check-access", handlers.CheckSubscriptionAccess)
+	subscriptions.Post("/create", handlers.CreateSubscription)
+	subscriptions.Get("/status", handlers.GetSubscriptionStatus)
+	// subscriptions.Delete("/cancel", handlers.CancelSubscription)
+
+	// User permission routes
+	users := app.Group("/api/users")
+	users.Use(middleware.AuthMiddleware())
+	users.Get("/permissions", handlers.GetUserPermissions)
+	users.Post("/creator/signup", handlers.SignupAsCreator)
+
+	// Stripe webhook (no auth required)
+	app.Post("/api/webhooks/stripe", handlers.HandleStripeWebhook)
+
 	// Protected Social Media Routes
 	social := app.Group("/api/social")
 	social.Use(middleware.AuthMiddleware()) // Apply auth middleware to all social routes

@@ -11,6 +11,8 @@ require (
 	github.com/google/generative-ai-go v0.19.0
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
+	github.com/stripe/stripe-go/v72 v72.122.0
+	github.com/stripe/stripe-go/v81 v81.4.0
 	github.com/svarlamov/goyhfin v0.0.0-20161220065822-c7565afb5e91
 	github.com/valyala/fastjson v1.6.4
 	google.golang.org/api v0.218.0
@@ -41,7 +43,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
-	github.com/rivo/uniseg v0.2.0 // indirect
+	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.51.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
