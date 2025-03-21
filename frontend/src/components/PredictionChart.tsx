@@ -9,7 +9,7 @@ interface PredictionChartProps {
   ticker: string;
 }
 
-const PredictionChart: React.FC<PredictionChartProps> = ({ ticker }) => {
+const   PredictionChart: React.FC<PredictionChartProps> = ({ ticker }) => {
   const chartRef = useRef<HTMLCanvasElement>(null); // Reference for the chart instance
   interface ChartData {
     linear_regression: { Date: string; Prediction: number }[];
