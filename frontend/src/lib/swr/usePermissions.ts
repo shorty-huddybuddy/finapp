@@ -62,21 +62,27 @@ export function useUserPermissions() {
   const { getToken } = useAuth();
   
   const { data, error, mutate } = useSWR(
-    ['http://localhost:8080/api/users/permissions', getToken],
-    async ([url, getToken]) => {
+    'user-permissions',
+    async () => {
       const token = await getToken();
       if (!token) throw new Error('Not authenticated');
-      return fetchUserPermissions(url, token);
+      const response = await fetch('http://localhost:8080/api/users/permissions', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error('Failed to fetch permissions');
+      return response.json();
     },
     {
       revalidateOnFocus: false,
-      dedupingInterval: 300000, // 5 minutes cache
+      revalidateOnReconnect: false,
+      dedupingInterval: 300000, // 5 minutes
       errorRetryCount: 2,
+      shouldRetryOnError: false,
     }
   );
 
   return {
-    permissions: data as UserPermissions,
+    permissions: data,
     isLoadingPermissions: !error && !data,
     isErrorPermissions: error,
     refreshPermissions: mutate,
@@ -88,16 +94,22 @@ export function useSubscriptionStatus() {
   const { getToken } = useAuth();
   
   const { data, error, mutate } = useSWR(
-    ['http://localhost:8080/api/subscriptions/status', getToken],
-    async ([url, getToken]) => {
+    'subscription-status',
+    async () => {
       const token = await getToken();
       if (!token) throw new Error('Not authenticated');
-      return fetchSubscriptionStatus(url, token);
+      const response = await fetch('http://localhost:8080/api/subscriptions/status', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error('Failed to fetch subscription status');
+      return response.json();
     },
     {
       revalidateOnFocus: false,
-      dedupingInterval: 300000, // 5 minutes cache
+      revalidateOnReconnect: false,
+      dedupingInterval: 300000, // 5 minutes
       errorRetryCount: 2,
+      shouldRetryOnError: false,
     }
   );
 
