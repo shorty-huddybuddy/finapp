@@ -3,10 +3,13 @@ package handlers
 import (
 	"backend/database"
 	"backend/models"
+	"encoding/json"
 	"fmt"
-	"time"
-	"strings"
 	"strconv"
+	"strings"
+	"time"
+
+	"sort"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -72,33 +75,116 @@ func (h *PostHandler) GetPost(c *fiber.Ctx) error {
 	return c.JSON(post)
 }
 
+// BatchGetPosts returns multiple posts at once
+func (h *PostHandler) BatchGetPosts(c *fiber.Ctx) error {
+	var postIds []string
+	if err := json.Unmarshal(c.Body(), &postIds); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	userId := c.Locals("userId").(string)
+	result := make(map[string]models.Post)
+
+	// Process each post ID
+	for _, postId := range postIds {
+		var post models.Post
+		postRef := database.GetFirebaseDB().NewRef(fmt.Sprintf("posts/%s", postId))
+		if err := postRef.Get(c.Context(), &post); err != nil {
+			// Skip posts that don't exist
+			continue
+		}
+
+		// Add ID to post
+		post.ID = postId
+
+		// Check like status
+		likeRef := database.GetFirebaseDB().NewRef(fmt.Sprintf("likes/%s/%s", postId, userId))
+		var liked bool
+		if err := likeRef.Get(c.Context(), &liked); err == nil {
+			post.Liked = liked
+		}
+
+		result[postId] = post
+	}
+
+	return c.JSON(result)
+}
+
 // GetAllPosts returns a list of posts.
 func (h *PostHandler) GetAllPosts(c *fiber.Ctx) error {
 	limit, _ := strconv.Atoi(c.Query("limit", "10"))
 	lastId := c.Query("lastId")
 	userId := c.Locals("userId")
 
+	// Debug log
+	fmt.Printf("[GetAllPosts] Request with limit: %d, lastId: %s\n", limit, lastId)
+
 	// Get reference to posts in Realtime Database
 	ref := database.GetFirebaseDB().NewRef("posts")
-	query := ref.OrderByKey()
-	if lastId != "" {
-		query = query.StartAt(lastId)
-	}
-	query = query.LimitToFirst(limit)
+	var queryResult map[string]models.Post
 
-	var posts map[string]models.Post
-	if err := query.Get(c.Context(), &posts); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to fetch posts",
-		})
+	// For pagination: if no cursor, get the latest posts
+	// If cursor exists, get posts older than cursor
+	if lastId == "" {
+		// First page: Get the most recent posts
+		query := ref.OrderByKey().LimitToLast(limit + 1)
+		if err := query.Get(c.Context(), &queryResult); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to fetch posts: " + err.Error(),
+			})
+		}
+	} else {
+		// Get posts before the cursor
+		query := ref.OrderByKey().EndAt(lastId).LimitToLast(limit + 2) // +2 to account for cursor and check for more
+		if err := query.Get(c.Context(), &queryResult); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to fetch posts: " + err.Error(),
+			})
+		}
 	}
 
-	// Convert map to slice and add metadata
-	postsList := make([]models.Post, 0, len(posts))
-	for id, post := range posts {
+	// Debug log
+	fmt.Printf("[GetAllPosts] Found %d posts in raw results\n", len(queryResult))
+
+	// Sort post IDs in reverse chronological order (newest first)
+	postIds := make([]string, 0, len(queryResult))
+	for id := range queryResult {
+		postIds = append(postIds, id)
+	}
+	sort.Sort(sort.Reverse(sort.StringSlice(postIds)))
+
+	// Remove the cursor from results if present
+	if lastId != "" && len(postIds) > 0 {
+		for i, id := range postIds {
+			if id == lastId {
+				postIds = append(postIds[:i], postIds[i+1:]...)
+				break
+			}
+		}
+	}
+
+	// Debug log
+	fmt.Printf("[GetAllPosts] After removing cursor, have %d post IDs\n", len(postIds))
+
+	// Check if we have more posts than the limit
+	var nextCursor string
+	if len(postIds) > limit {
+		nextCursor = postIds[limit] // The first post of the next page
+		postIds = postIds[:limit]   // Limit to requested amount
+	}
+
+	// Debug log
+	fmt.Printf("[GetAllPosts] Final post count: %d, next cursor: %s\n", len(postIds), nextCursor)
+
+	// Build the posts list with all metadata
+	postsList := make([]models.Post, 0, len(postIds))
+	for _, id := range postIds {
+		post := queryResult[id]
 		post.ID = id
 
-		// Check like status if user is authenticated
+		// Check like status
 		if userId != nil {
 			likeRef := database.GetFirebaseDB().NewRef(fmt.Sprintf("likes/%s/%s", id, userId))
 			var liked bool
@@ -107,12 +193,19 @@ func (h *PostHandler) GetAllPosts(c *fiber.Ctx) error {
 			}
 		}
 
-		if !post.IsPremiumPost || userId != nil {
-			postsList = append(postsList, post)
-		}
+		postsList = append(postsList, post)
 	}
 
-	return c.JSON(postsList)
+	// Return posts with pagination info
+	result := fiber.Map{
+		"posts": postsList,
+	}
+
+	if nextCursor != "" {
+		result["nextPageCursor"] = nextCursor
+	}
+
+	return c.JSON(result)
 }
 
 // DeletePost handles the deletion of a post
