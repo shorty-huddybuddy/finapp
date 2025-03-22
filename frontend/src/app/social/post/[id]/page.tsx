@@ -12,6 +12,7 @@ import { useAuth, useUser } from "@clerk/nextjs"
 import { PostDetailHeader } from "@/components/post-detail-header"
 import Image from "next/image"
 import { ImagePreview } from "@/components/image-preview"
+import { useSocialStore } from "@/hooks/store/social"
 
 type Post = {
   id: string;
@@ -42,27 +43,39 @@ type Comment = {
 
 export default function PostDetailPage() {
   const { user } = useUser()
-  const [post, setPost] = useState<Post | null>(null)
-  const [comments, setComments] = useState<Comment[]>([])
-  const [loading, setLoading] = useState(true)
-  const [commentText, setCommentText] = useState("")
   const { getToken } = useAuth()
   const { id } = useParams() as { id: string }
   const [imagePreviewOpen, setImagePreviewOpen] = useState(false)
+
+  // Get post from store and store functions
+  const { 
+    currentPost: post, 
+    setCurrentPost, 
+    updatePost,
+    error,
+    setError
+  } = useSocialStore()
+
+  const [comments, setComments] = useState<Comment[]>([])
+  const [loading, setLoading] = useState(true)
+  const [commentText, setCommentText] = useState("")
 
   // Fetch post details and comments on mount
   useEffect(() => {
     const fetchPostDetails = async () => {
       try {
+        setLoading(true)
         const token = await getToken()
+        
+        // Fetch post details
         const res = await fetch(`http://localhost:8080/api/social/posts/${id}`, {
           headers: { 'Authorization': token ? `Bearer ${token}` : '' }
         })
         if (!res.ok) throw new Error("Failed to load post")
         const postData = await res.json()
-        setPost(postData)
+        setCurrentPost(postData)
 
-        // Assume a comments endpoint is available:
+        // Fetch comments
         const commentRes = await fetch(`http://localhost:8080/api/social/posts/${id}/comments`, {
           headers: { 'Authorization': token ? `Bearer ${token}` : '' }
         })
@@ -71,13 +84,61 @@ export default function PostDetailPage() {
           setComments(commentData)
         }
       } catch (error) {
+        setError(error as Error)
         toast.error("Error loading post")
       } finally {
         setLoading(false)
       }
     }
+
     fetchPostDetails()
-  }, [id, getToken])
+    
+    // Cleanup on unmount
+    return () => {
+      setCurrentPost(null)
+      setError(null)
+    }
+  }, [id, getToken, setCurrentPost, setError])
+
+  // Handle like functionality
+  const handleLike = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!post) return
+
+    try {
+      const token = await getToken()
+      if (!token) {
+        toast.error('Please login to like posts')
+        return
+      }
+
+      // Optimistically update UI
+      updatePost(post.id, { 
+        liked: !post.liked,
+        likes: post.liked ? post.likes - 1 : post.likes + 1 
+      })
+
+      const response = await fetch(`http://localhost:8080/api/social/posts/${post.id}/like`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        }
+      })
+
+      if (!response.ok) {
+        // Revert on error
+        updatePost(post.id, { 
+          liked: post.liked,
+          likes: post.likes
+        })
+        throw new Error('Failed to update like')
+      }
+
+    } catch (error) {
+      console.error('Error updating like:', error)
+      toast.error('Failed to update like')
+    }
+  }
 
   const handleCommentSubmit = async () => {
     if(!commentText.trim() || !user) return;
@@ -103,8 +164,7 @@ export default function PostDetailPage() {
       
       // Update post comment count
       if (post) {
-        setPost({
-          ...post,
+        updatePost(post.id, {
           comments: post.comments + 1
         })
       }
@@ -115,21 +175,27 @@ export default function PostDetailPage() {
     }
   }
 
-  if (loading) return (
-    <>
-      <PostDetailHeader />
-      <div className="flex justify-center p-8">
-        <Spinner />
-      </div>
-    </>
-  )
+  if (loading) {
+    return (
+      <>
+        <PostDetailHeader />
+        <div className="flex justify-center p-8">
+          <Spinner />
+        </div>
+      </>
+    )
+  }
 
-  if (!post) return (
-    <>
-      <PostDetailHeader />
-      <div className="p-8 text-center">Post not found</div>
-    </>
-  )
+  if (error || !post) {
+    return (
+      <>
+        <PostDetailHeader />
+        <div className="p-8 text-center text-red-500">
+          {error?.message || 'Post not found'}
+        </div>
+      </>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -165,10 +231,17 @@ export default function PostDetailPage() {
           </CardContent>
           <CardFooter>
             <div className="flex items-center gap-4 text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <Heart className={post.liked ? "text-red-500 fill-red-500" : ""} />
-                <span>{post.likes}</span>
-              </div>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className={`hover:text-red-500 ${post.liked ? 'text-red-500' : ''}`}
+                onClick={handleLike}
+              >
+                <Heart 
+                  className={post.liked ? "w-4 h-4 fill-red-500 text-red-500" : "w-4 h-4"} 
+                />
+                <span className="ml-2 text-xs">{post.likes}</span>
+              </Button>
               <div className="flex items-center gap-1">
                 <MessageCircle />
                 <span>{post.comments}</span>

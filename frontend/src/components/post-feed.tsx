@@ -1,4 +1,5 @@
 "use client"
+import { useState, useCallback, useRef, useEffect } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
@@ -6,7 +7,6 @@ import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Heart, MessageCircle, Share, MoreHorizontal, Star } from "lucide-react"
 import Link from "next/link"
-import { useState, useCallback, useMemo, useRef } from "react"
 import Image from "next/image"
 import { useAuth, useUser } from "@clerk/nextjs"
 import { Spinner } from "@/components/ui/spinner"
@@ -15,56 +15,120 @@ import { useRouter } from 'next/navigation'
 import { SubscriptionDialog } from "./subscription-dialog"
 import { loadStripe } from "@stripe/stripe-js"
 import { ImagePreview } from "@/components/image-preview"
-import { useUserPermissions, useSubscriptionStatus } from "@/lib/swr/usePermissions"
-import { usePosts, Post } from "@/lib/swr/usePosts"
+import { usePosts } from "@/lib/swr/usePosts" 
+import { Post } from "@/types/social"
+import { useSocialStore } from "@/hooks/store/social" 
+import { useAuthStore } from "@/hooks/store/auth" 
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
 const POSTS_PER_PAGE = 10
 
 export function PostFeed() {
-  // Use the new usePosts hook
+  // State variables
+  const [showSubscribeDialog, setShowSubscribeDialog] = useState(false);
+  const [selectedCreator, setSelectedCreator] = useState<string | null>(null);
+  const [subscriptionType, setSubscriptionType] = useState<"creator" | "platform" | null>(null);
+  const [imagePreviewOpen, setImagePreviewOpen] = useState(false);
+  const [currentImageUrl, setCurrentImageUrl] = useState<string>("");
+
+  // Add new loading state specifically for infinite scroll
+  const [isInfiniteLoading, setIsInfiniteLoading] = useState(false);
+
+  // Get data from Zustand store directly
   const { 
-    posts, 
-    error, 
-    isLoading, 
-    isLoadingMore, 
-    hasMore, 
-    fetchNextPage, 
-    updatePost, 
-    lastItemRef 
+    posts,
+    isLoading,
+    error,
+    hasMore,
+    updatePost,
+    removePost,
+    setHasMore,
+    addPost,
+    setLoading,
+    setPosts
+  } = useSocialStore();
+  
+  const {
+    permissions,
+    subscriptions
+  } = useAuthStore();
+
+  // Get API utilities
+  const { getToken } = useAuth();
+  const { user } = useUser();
+  const router = useRouter();
+  
+  // Use SWR posts hook for fetching with infinite scroll
+  const { 
+    fetchNextPage,
+    isLoadingMore,
+    mutate
   } = usePosts(POSTS_PER_PAGE);
   
-  const { getToken } = useAuth()
-  const { user } = useUser()
-  const router = useRouter();
-  const { permissions, isLoadingPermissions } = useUserPermissions();
-  const { subscriptions, isLoadingSubscriptions } = useSubscriptionStatus();
+  // Fetch posts on mount if needed
+  useEffect(() => {
+    if (posts.length === 0 && !isLoading) {
+      console.log('No posts in store, triggering fetch');
+      mutate();
+    }
+  }, [posts.length, isLoading, mutate]);
+
+  // Set up intersection observer for infinite scroll
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
+  // Define fetchMorePosts first
+  const fetchMorePosts = useCallback(async () => {
+    if (!hasMore || isLoading || isInfiniteLoading) return;
+    
+    try {
+      setIsInfiniteLoading(true);
+      await fetchNextPage();
+    } finally {
+      setIsInfiniteLoading(false);
+    }
+  }, [hasMore, isLoading, isInfiniteLoading, fetchNextPage]);
+
+  // Now we can use fetchMorePosts in lastPostRef
+  const lastPostRef = useCallback((node: HTMLElement | null) => {
+    if (isLoading) return;
+    
+    // Disconnect previous observer
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+    
+    // Create new observer
+    observerRef.current = new IntersectionObserver(entries => {
+      // If the last item is visible and we have more posts to load
+      if (entries[0]?.isIntersecting && hasMore && !isLoading) {
+        console.log('Last post is visible, loading more...');
+        fetchMorePosts();
+      }
+    }, { 
+      rootMargin: '200px',  // Start loading before the element is visible
+      threshold: 0.1        // Trigger when 10% of the element is visible
+    });
+    
+    // Observe the last element
+    if (node) {
+      observerRef.current.observe(node);
+    }
+  }, [fetchMorePosts, hasMore, isLoading]);
+
+  // The rest of the component remains unchanged
   const isPremium = permissions?.isPremium || false;
   
-  // Add subscription dialog states
-  const [showSubscribeDialog, setShowSubscribeDialog] = useState(false)
-  const [selectedCreator, setSelectedCreator] = useState<string | null>(null)
-  const [subscriptionType, setSubscriptionType] = useState<"creator" | "platform" | null>(null)
-
-  // Add image preview states
-  const [imagePreviewOpen, setImagePreviewOpen] = useState(false)
-  const [currentImageUrl, setCurrentImageUrl] = useState<string>("")
-
   const canViewPremiumContent = useCallback((post: Post) => {
-    // If user has platform premium, they can see all content
     if (isPremium) return true;
 
-    // Check if post is premium
     const isPremiumContent = post.isPremiumPost || post.author.isPremium;
     if (!isPremiumContent) return true;
 
-    // Authors can always see their own posts
     if (user && `@${user.username || user.id}` === post.author.handle) {
       return true;
     }
 
-    // Check if user has an active subscription to this creator
     if (subscriptions?.creatorSubscriptions && post.author.handle) {
       const creatorId = post.author.handle.replace('@', '');
       const hasCreatorSub = subscriptions.creatorSubscriptions.some(
@@ -73,12 +137,11 @@ export function PostFeed() {
       if (hasCreatorSub) return true;
     }
 
-    // For premium content, check server-provided access flag
     return post.hasAccess === true;
   }, [user, isPremium, subscriptions]);
 
   const handleLike = async (e: React.MouseEvent, postId: string, currentLikes: number, isCurrentlyLiked: boolean) => {
-    e.stopPropagation(); // Prevent navigation
+    e.stopPropagation();
     try {
       const token = await getToken();
       if (!token) {
@@ -86,7 +149,6 @@ export function PostFeed() {
         return;
       }
 
-      // Optimistically update UI
       updatePost(postId, { 
         liked: !isCurrentlyLiked,
         likes: isCurrentlyLiked ? currentLikes - 1 : currentLikes + 1 
@@ -100,7 +162,6 @@ export function PostFeed() {
       });
 
       if (!response.ok) {
-        // Revert optimistic update if failed
         updatePost(postId, { 
           liked: isCurrentlyLiked,
           likes: currentLikes
@@ -111,10 +172,14 @@ export function PostFeed() {
     } catch (error) {
       console.error('Error updating like:', error);
       toast.error('Failed to update like');
+      
+      updatePost(postId, { 
+        liked: isCurrentlyLiked,
+        likes: currentLikes
+      });
     }
   };
 
-  // Add delete handler
   const handleDeletePost = async (postId: string, authorHandle: string) => {
     try {
       const token = await getToken();
@@ -123,8 +188,7 @@ export function PostFeed() {
         return;
       }
 
-      // Check if user is the author
-      const userHandle = `@${user?.username || user?.id}`
+      const userHandle = `@${user?.username || user?.id}`;
       if (authorHandle !== userHandle) {
         toast.error('You can only delete your own posts');
         return;
@@ -141,7 +205,7 @@ export function PostFeed() {
         throw new Error('Failed to delete post');
       }
 
-      // Remove post from display
+      removePost(postId);
       toast.success('Post deleted successfully');
 
     } catch (error) {
@@ -160,7 +224,6 @@ export function PostFeed() {
       setShowSubscribeDialog(false);
       const token = await getToken();
       
-      // Add validation for creator subscriptions
       if (type === "creator" && !creatorId) {
         toast.error("Creator ID is required for creator subscriptions");
         return;
@@ -184,8 +247,6 @@ export function PostFeed() {
       }
 
       const { sessionId } = await response.json();
-      
-      // Redirect to Stripe checkout
       const stripe = await stripePromise;
       if (!stripe) {
         throw new Error('Stripe failed to load');
@@ -203,7 +264,6 @@ export function PostFeed() {
   };
 
   const handlePostClick = (e: React.MouseEvent, post: Post) => {
-    // Prevent navigation if premium content and no access
     const hasAccess = canViewPremiumContent(post);
     const isPremiumContent = post.isPremiumPost || post.author.isPremium;
 
@@ -217,31 +277,29 @@ export function PostFeed() {
   };
 
   const handleImageClick = (e: React.MouseEvent, imageUrl: string) => {
-    e.stopPropagation()
-    setCurrentImageUrl(imageUrl)
-    setImagePreviewOpen(true)
-  }
+    e.stopPropagation();
+    setCurrentImageUrl(imageUrl);
+    setImagePreviewOpen(true);
+  };
 
-  // New function to handle intersection with bottom of list
-  const bottomObserverRef = useRef<IntersectionObserver | null>(null);
+  // Add debug button for testing
+  const refreshPosts = useCallback(() => {
+    console.log('Manual refresh triggered');
+    setLoading(true);
+    mutate()
+      .then(() => {
+        console.log('Refresh complete');
+        setLoading(false);
+      })
+      .catch(error => {
+        console.error('Refresh error', error);
+        setLoading(false);
+      });
+  }, [mutate, setLoading]);
 
-  // Set up auto-loading when approaching bottom of feed
-  const bottomRef = useCallback((node: HTMLDivElement | null) => {
-    if (bottomObserverRef.current) bottomObserverRef.current.disconnect();
-    
-    bottomObserverRef.current = new IntersectionObserver(entries => {
-      if (entries[0]?.isIntersecting && hasMore && !isLoadingMore) {
-        fetchNextPage();
-      }
-    }, { threshold: 0.5 });
-
-    if (node) bottomObserverRef.current.observe(node);
-  }, [fetchNextPage, hasMore, isLoadingMore]);
-
-  if (error) return <div className="p-4 text-center text-red-500">{error.message || 'Failed to load posts'}</div>
+  if (error) return <div className="p-4 text-center text-red-500">{error.message || 'Failed to load posts'}</div>;
   
-  // Show loading state while fetching permissions, subscriptions, or initial posts
-  if (isLoading || isLoadingPermissions || isLoadingSubscriptions) {
+  if (isLoading && posts.length === 0) {
     return (
       <div className="h-[200px] flex items-center justify-center">
         <Spinner />
@@ -251,6 +309,20 @@ export function PostFeed() {
 
   return (
     <div className="space-y-4 p-4">
+      {/* Debug refresh button */}
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold">Posts</h2>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={refreshPosts} 
+          disabled={isLoading}
+        >
+          {isLoading ? <Spinner className="h-4 w-4 mr-2" /> : null}
+          Refresh Posts
+        </Button>
+      </div>
+
       {posts.length === 0 ? (
         <div className="text-center text-muted-foreground">No posts yet</div>
       ) : (
@@ -271,7 +343,6 @@ export function PostFeed() {
                   </Avatar>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      {/* Stop propagation to prevent triggering the card click */}
                       <div onClick={(e) => e.stopPropagation()}>
                         <Link href={`/profile/${post.author.handle}`} className="font-semibold hover:underline">
                           {post.author.name}
@@ -287,7 +358,6 @@ export function PostFeed() {
                     </div>
                     <p className="text-sm text-muted-foreground">{post.author.handle}</p>
                   </div>
-                  {/* Stop propagation for dropdown menu */}
                   <div onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -299,7 +369,6 @@ export function PostFeed() {
                         <DropdownMenuItem onClick={() => navigator.clipboard.writeText(`/posts/${post.id}`)}>
                           Copy link
                         </DropdownMenuItem>
-                        {/* Add delete option if user is author */}
                         {user && `@${user.username || user.id}` === post.author.handle && (
                           <DropdownMenuItem
                             onClick={() => handleDeletePost(post.id, post.author.handle)}
@@ -314,7 +383,6 @@ export function PostFeed() {
                   </div>
                 </CardHeader>
                 
-                {/* ...existing CardContent... */}
                 <CardContent className="space-y-4">
                   <div className={`${!hasAccess && isPremiumContent ? 'blur-md select-none' : ''}`}>
                     <p className="text-sm whitespace-pre-line">{post.content}</p>
@@ -333,7 +401,6 @@ export function PostFeed() {
                     )}
                   </div>
 
-                  {/* Premium Content Overlay */}
                   {isPremiumContent && !hasAccess && (
                     <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm z-10">
                       <div className="text-center p-6">
@@ -354,7 +421,6 @@ export function PostFeed() {
                           <Button
                             onClick={(e) => {
                               e.stopPropagation();
-                              // Use the handle without @ as the creatorId
                               const creatorId = post.author.handle.replace('@', '');
                               handleSubscribe("creator", creatorId);
                             }}
@@ -394,44 +460,46 @@ export function PostFeed() {
               </Card>
             );
 
-            // Use the lastItemRef for the last item to trigger prefetching
+            // Fix: Use a unique key by combining post ID with index
+            const uniqueKey = `${post.id}-${index}`;
+            
             if (index === posts.length - 1) {
               return (
-                <div key={post.id} ref={lastItemRef}>
+                <div key={uniqueKey} ref={lastPostRef}>
                   {postContent}
                 </div>
               );
             }
 
-            return <div key={post.id}>{postContent}</div>;
+            return <div key={uniqueKey}>{postContent}</div>;
           })}
           
-          {/* Auto-loading trigger element - replace the Load More button with this */}
-          {hasMore && (
-            <div ref={bottomRef} className="py-4 flex items-center justify-center">
-              {isLoadingMore && <Spinner />}
+          {(hasMore || isInfiniteLoading) && (
+            <div className="py-8 flex flex-col items-center justify-center gap-2">
+              <Spinner className="w-8 h-8 text-blue-500" />
+              <p className="text-sm text-muted-foreground">
+                {isInfiniteLoading ? 'Loading more posts...' : 'Scroll for more'}
+              </p>
             </div>
           )}
         </>
       )}
       
-      {/* Add SubscriptionDialog at the bottom of the component */}
       <SubscriptionDialog 
         open={showSubscribeDialog}
         onOpenChange={setShowSubscribeDialog}
         type={subscriptionType}
         creatorId={selectedCreator}
         onSubscribe={handleSubscribe}
-        loading={isLoadingMore}
+        loading={isLoading}
       />
       
-      {/* Add ImagePreview component */}
       <ImagePreview
         open={imagePreviewOpen}
         onOpenChange={setImagePreviewOpen}
-        images={[currentImageUrl].filter(Boolean)} // Filter out empty strings
+        images={[currentImageUrl].filter(Boolean)}
         initialIndex={0}
       />
     </div>
-  )
+  );
 }

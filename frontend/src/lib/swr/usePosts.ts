@@ -1,218 +1,165 @@
-import useSWR from 'swr';
 import useSWRInfinite from 'swr/infinite';
 import { useAuth } from '@clerk/nextjs';
-import { useMemo, useState, useCallback, useRef, useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
+import { Post, PostsResponse } from '@/types/social';
+import { useSocialStore } from '@/hooks/store/social';
 
-interface Author {
-  name: string;
-  handle: string;
-  avatar: string;
-  isPremium: boolean;
-}
+// In-memory cache for first page of posts
+let postsCache: { data: PostsResponse | null, timestamp: number } | null = null;
+const CACHE_EXPIRY = 2 * 60 * 1000; // 2 minutes
 
-export interface Post {
-  id: string;
-  author: Author;
-  content: string;
-  image?: string;
-  likes: number;
-  comments: number;
-  shares: number;
-  isPremiumPost: boolean;
-  timestamp: string;
-  liked: boolean;
-  requiredSubscriptionTier?: string;
-  minimumTierRequired?: string;
-  hasAccess: boolean;
-  creatorId?: string;
-}
-
-interface PostsResponse {
-  posts: Post[];
-  nextPageCursor?: string;
-}
-
-export function usePosts(pageSize = 10) {
+export function usePosts(pageSize = 10, skip = false) {
   const { getToken } = useAuth();
-  const [hasReachedEnd, setHasReachedEnd] = useState(false);
-  const nextPageRef = useRef<string | null>(null);
+  const { 
+    setPosts, 
+    setLoading, 
+    setError, 
+    setHasMore,
+    addPosts 
+  } = useSocialStore();
   
-  // Define the key function for SWRInfinite
+  // Define key generator for SWRInfinite
   const getKey = useCallback((pageIndex: number, previousPageData: PostsResponse | null) => {
+    // If skip is true, return null to skip fetching
+    if (skip) return null;
+    
     // First page, no cursor
-    if (pageIndex === 0) return ['posts', null, pageSize, false];
+    if (pageIndex === 0) return ['posts', '', pageSize];
     
-    // If we got an explicit "no more pages" signal (no nextPageCursor)
+    // If we got an explicit "no more pages" signal
     if (previousPageData && !previousPageData.nextPageCursor) {
-      console.log("No more pages detected from API response");
-      setHasReachedEnd(true);
-      return null;
-    }
-    
-    // If we have data but no posts, also end
-    if (previousPageData && previousPageData.posts && previousPageData.posts.length === 0) {
-      console.log("Empty page detected, ending pagination");
-      setHasReachedEnd(true);
+      setHasMore(false);
       return null;
     }
     
     // Get next cursor and continue
     const cursor = previousPageData?.nextPageCursor;
-    console.log(`Getting page ${pageIndex} with cursor: ${cursor}`);
-    nextPageRef.current = cursor || null;
-    return ['posts', cursor, pageSize, false];
-  }, [pageSize]);
+    return ['posts', cursor || '', pageSize];
+  }, [pageSize, setHasMore, skip]);
   
-  // Fetch function for SWRInfinite
-  const fetchPosts = useCallback(async ([_, cursor, limit]: [string, string | null, number, boolean]) => {
-    const token = await getToken();
-    
-    const url = new URL('http://localhost:8080/api/social/posts');
-    if (cursor) url.searchParams.append('lastId', cursor);
-    url.searchParams.append('limit', String(limit));
-    
-    console.log(`Fetching posts with URL: ${url.toString()}`);
-    const response = await fetch(url.toString(), {
-      headers: {
-        'Authorization': token ? `Bearer ${token}` : '',
+  // Fetch function for SWRInfinite with caching for first page
+  const fetchPosts = useCallback(async ([_, cursor, limit]: [string, string | null, number]) => {
+    try {
+      // Use cache for first page only
+      if (!cursor && postsCache && Date.now() - postsCache.timestamp < CACHE_EXPIRY) {
+        console.log('Using cached post data for first page');
+        return postsCache.data as PostsResponse;
       }
-    });
-    
-    if (!response.ok) throw new Error('Failed to fetch posts');
-    const data = await response.json();
-    console.log(`Received ${data.posts?.length || 0} posts, nextCursor: ${data.nextPageCursor || 'none'}`);
-    return data;
-  }, [getToken]);
+      
+      const token = await getToken();
+      
+      const url = new URL('http://localhost:8080/api/social/posts');
+      if (cursor) url.searchParams.append('lastId', cursor);
+      url.searchParams.append('limit', String(limit));
+      
+      console.log(`Fetching posts: ${url.toString()}`);
+      
+      const response = await fetch(url.toString(), {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
+        cache: cursor ? 'no-store' : 'force-cache' // Cache first page
+      });
+      
+      if (!response.ok) throw new Error('Failed to fetch posts');
+      
+      const data = await response.json() as PostsResponse;
+      console.log(`Fetched ${data.posts?.length || 0} posts`);
+      
+      // Cache first page
+      if (!cursor) {
+        postsCache = {
+          data,
+          timestamp: Date.now()
+        };
+      }
+      
+      return data;
+    } catch (err) {
+      console.error('Error fetching posts:', err);
+      setError(err as Error);
+      throw err as Error;
+    }
+  }, [getToken, setError]);
   
-  // Use SWRInfinite with more aggressive settings
-  const {
+  // SWR Infinite hook with proper types
+  const { 
     data: pagesData,
     error,
     size,
     setSize,
     mutate,
-    isValidating,
-  } = useSWRInfinite(getKey, fetchPosts, {
-    revalidateFirstPage: false,
-    revalidateOnFocus: false,
-    dedupingInterval: 30000, // 30 seconds
-    errorRetryInterval: 5000, // 5 seconds
-    persistSize: true, // Keep size state when component unmounts
-  });
-  
-  // Prefetch next page
-  const prefetchNextPage = useCallback(async () => {
-    if (!nextPageRef.current || hasReachedEnd) return;
-    
-    try {
-      // Use the cached fetcher function
-      await fetchPosts(['posts', nextPageRef.current, pageSize, true]);
-    } catch (err) {
-      console.error('Error prefetching next page:', err);
+    isValidating
+  } = useSWRInfinite<PostsResponse>(
+    getKey,
+    fetchPosts,
+    {
+      revalidateFirstPage: false,
+      revalidateOnFocus: false,
+      dedupingInterval: 30000, // 30 seconds
+      errorRetryInterval: 5000,
+      persistSize: true,
+      revalidateOnMount: !postsCache // Only revalidate on mount if no cache
     }
-  }, [fetchPosts, pageSize, hasReachedEnd]);
-  
-  // Memoize the flattened posts
-  const posts = useMemo(() => {
-    if (!pagesData) return [];
-    
-    // Track seen post IDs to avoid duplicates
-    const seenIds = new Set<string>();
-    const allPosts: Post[] = [];
-    
-    pagesData.forEach(pageData => {
-      if (!pageData?.posts) return;
+  );
+
+  // Update loading state
+  useEffect(() => {
+    setLoading(isValidating && !pagesData?.length);
+  }, [isValidating, pagesData, setLoading]);
+
+  // Update store when data changes
+  useEffect(() => {
+    if (pagesData?.length) {
+      console.log(`Updating store with ${pagesData.length} pages of posts`);
       
-    pageData.posts.forEach((post: Post) => {
-      if (!seenIds.has(post.id)) {
-        seenIds.add(post.id);
-        allPosts.push(post);
-      }
-    });
-    });
-    
-    return allPosts;
-  }, [pagesData]);
-  
-  // Fetch next page function
-  const fetchNextPage = useCallback(() => {
-    if (!hasReachedEnd && !isValidating) {
-      setSize(size + 1);
-    }
-  }, [hasReachedEnd, isValidating, setSize, size]);
-  
-  // Batch update post data (e.g., like status)
-  const updatePost = useCallback((postId: string, data: Partial<Post>) => {
-    if (!pagesData) return;
-    
-    // Create new pages data with updated post
-    const newPagesData = pagesData.map(pageData => {
-      if (!pageData?.posts) return pageData;
-      
-    return {
-      ...pageData,
-      posts: pageData.posts.map((post: Post) => 
-        post.id === postId ? { ...post, ...data } : post
-      )
-    } as PostsResponse;
-    });
-    
-    // Update cache without revalidation
-    mutate(newPagesData, false);
-  }, [pagesData, mutate]);
-  
-  // Improved lastItemRef to handle edge cases
-  const lastItemRef = useCallback((node: HTMLElement | null) => {
-    if (!node || hasReachedEnd || isValidating) return;
-    
-    const observer = new IntersectionObserver(
-      entries => {
-        if (entries[0].isIntersecting) {
-          console.log('Last item visible, loading more posts...');
-          // Small timeout to prevent too many quick requests
-          setTimeout(() => {
-            if (!isValidating && !hasReachedEnd) {
-              setSize(prevSize => prevSize + 1);
-            }
-          }, 100);
+      // For initial page load, replace all posts
+      if (pagesData.length === 1) {
+        setPosts(pagesData[0].posts || []);
+      } else {
+        // For subsequent pages, append new posts
+        const latestPage = pagesData[pagesData.length - 1];
+        if (latestPage?.posts?.length) {
+          addPosts(latestPage.posts);
         }
-      },
-      { 
-        rootMargin: '300px', // Load earlier - 300px before reaching the end
-        threshold: 0.1
       }
-    );
-    
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [isValidating, hasReachedEnd, setSize]);
-  
-  // Log when we reach the end
-  useEffect(() => {
-    if (hasReachedEnd) {
-      console.log("Reached end of post feed");
+      
+      // Update has more flag based on last page
+      const lastPage = pagesData[pagesData.length - 1];
+      setHasMore(!!lastPage?.nextPageCursor);
     }
-  }, [hasReachedEnd]);
+  }, [pagesData, setPosts, addPosts, setHasMore]);
   
-  // Debug logging for pages
-  useEffect(() => {
-    if (pagesData) {
-      console.log(`Loaded ${size} pages with total ${posts.length} posts`);
-    }
-  }, [size, pagesData, posts]);
-  
+  // Return a simpler API for external components
   return {
-    posts,
-    error,
-    isLoading: !error && !pagesData,
-    isLoadingMore: !error && !!pagesData && isValidating,
-    hasMore: !hasReachedEnd,
     fetchNextPage: useCallback(() => {
-      if (!hasReachedEnd && !isValidating) {
-        setSize(prevSize => prevSize + 1);
+      if (!isValidating && !skip) {
+        setSize(size + 1);
       }
-    }, [hasReachedEnd, isValidating, setSize]),
-    updatePost,
-    lastItemRef,
+    }, [isValidating, skip, setSize, size]),
+    isLoadingMore: isValidating && size > 0,
+    hasMore: pagesData?.length ? !!pagesData[pagesData.length - 1]?.nextPageCursor : true,
+    mutate,
+    lastItemRef: useCallback((node: HTMLElement | null) => {
+      if (!node || skip) return;
+      
+      const observer = new IntersectionObserver(entries => {
+        if (entries[0]?.isIntersecting && !isValidating && pagesData?.length && pagesData[pagesData.length - 1]?.nextPageCursor) {
+          console.log('Last item visible, loading more...');
+          setSize(size + 1);
+        }
+      }, { rootMargin: '200px' });
+      
+      observer.observe(node);
+      return () => observer.disconnect();
+    }, [isValidating, pagesData, setSize, size, skip])
   };
 }
+
+// Invalidate posts cache
+export function invalidatePostsCache() {
+  postsCache = null;
+}
+
+export type { Post } from '@/types/social';
+
