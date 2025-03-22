@@ -8,6 +8,7 @@ interface SocialStore {
   isLoading: boolean
   error: Error | null
   hasMore: boolean
+  postCache: Map<string, Post>; // Add post cache
   setPosts: (posts: Post[]) => void
   setCurrentPost: (post: Post | null) => void
   setIsPremiumView: (isPremium: boolean) => void
@@ -19,15 +20,18 @@ interface SocialStore {
   removePost: (postId: string) => void
   updatePost: (postId: string, data: Partial<Post>) => void
   updateCurrentPost: (data: Partial<Post>) => void
+  addToCache: (post: Post) => void;
+  getFromCache: (id: string) => Post | undefined;
 }
 
-export const useSocialStore = create<SocialStore>((set) => ({
+export const useSocialStore = create<SocialStore>((set, get) => ({
   posts: [],
   currentPost: null,
   isPremiumView: false,
   isLoading: false,
   error: null,
   hasMore: true,
+  postCache: new Map(),
   setPosts: (posts) => set((state) => {
     // Create a Set of existing post IDs for quick lookup
     const existingIds = new Set(state.posts.map(p => p.id));
@@ -40,7 +44,13 @@ export const useSocialStore = create<SocialStore>((set) => ({
       posts: [...state.posts, ...uniquePosts] 
     };
   }),
-  setCurrentPost: (post) => set({ currentPost: post }),
+  setCurrentPost: (post) => set(state => {
+    if (post) {
+      // Add to cache when setting current post
+      state.postCache.set(post.id, post);
+    }
+    return { currentPost: post };
+  }),
   setIsPremiumView: (isPremium) => set({ isPremiumView: isPremium }),
   setLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error }),
@@ -89,5 +99,11 @@ export const useSocialStore = create<SocialStore>((set) => ({
     currentPost: state.currentPost 
       ? { ...state.currentPost, ...data }
       : null
-  }))
+  })),
+  addToCache: (post) => set((state) => {
+    const newCache = new Map(state.postCache);
+    newCache.set(post.id, post);
+    return { postCache: newCache };
+  }),
+  getFromCache: (id) => get().postCache.get(id),
 }))

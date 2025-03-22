@@ -20,12 +20,17 @@ export function StoreProvider({ children }: StoreProviderProps) {
   // Reduce API calls by skipping data fetch if not signed in
   const skipFetch = !isSignedIn;
   
-  // Only fetch data if signed in - use skipFetch to prevent redundant calls
-  const { permissions, isLoadingPermissions, refreshPermissions } = useUserPermissions(skipFetch);
-  const { subscriptions, isLoadingSubscriptions, refreshSubscriptions } = useSubscriptionStatus(skipFetch);
+  // Only fetch data if not in cache
+  const skipPermissionsFetch = !isSignedIn || !!useAuthStore.getState().permissions;
+  const skipSubscriptionsFetch = !isSignedIn || !!useAuthStore.getState().subscriptions;
   
-  // Initialize posts data
-  const { mutate } = usePosts(10, skipFetch);
+  // Use skip conditions to prevent unnecessary fetches
+  const { permissions, isLoadingPermissions, refreshPermissions } = useUserPermissions(skipPermissionsFetch);
+  const { subscriptions, isLoadingSubscriptions, refreshSubscriptions } = useSubscriptionStatus(skipSubscriptionsFetch);
+
+  // Skip posts fetch on post detail pages
+  const isPostDetail = window.location.pathname.includes('/social/post/');
+  const { mutate } = usePosts(10, isPostDetail);
   
   // Get setter functions from stores
   const { setPermissions } = useAuthStore();
