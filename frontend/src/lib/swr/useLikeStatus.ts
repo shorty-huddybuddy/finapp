@@ -44,8 +44,7 @@ export function useLikeStatuses(postIds: string[]) {
     },
     {
       revalidateOnFocus: false,
-      dedupingInterval: 60000, // Cache for 1 minute
-      errorRetryCount: 1,
+      dedupingInterval: 60000, // 1 minute cache
     }
   );
   
