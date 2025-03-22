@@ -208,7 +208,7 @@ export function Navbar() {
             <motion.a
               variants={itemVariants}
               whileHover={{ scale: 1.05 }}
-              href="/prediction"
+              href="/predictions"
               className="text-blue-100 transition-all duration-300 font-medium no-underline flex items-center gap-2 whitespace-nowrap"
             >
               <ChartLineUp className="w-4 h-4" />
