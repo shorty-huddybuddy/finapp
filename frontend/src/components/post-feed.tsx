@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Heart, MessageCircle, Share, MoreHorizontal, Star } from "lucide-react"
 import Link from "next/link"
-import { useEffect, useState, useRef, useCallback } from "react"
+import { useState, useCallback, useMemo, useRef } from "react"
 import Image from "next/image"
 import { useAuth, useUser } from "@clerk/nextjs"
 import { Spinner } from "@/components/ui/spinner"
@@ -14,49 +14,33 @@ import { toast } from "sonner"
 import { useRouter } from 'next/navigation'
 import { SubscriptionDialog } from "./subscription-dialog"
 import { loadStripe } from "@stripe/stripe-js"
-import { useExtendedUser } from "@/hooks/useExtendedUser"
 import { ImagePreview } from "@/components/image-preview"
+import { useUserPermissions, useSubscriptionStatus } from "@/lib/swr/usePermissions"
+import { usePosts, Post } from "@/lib/swr/usePosts"
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
-type Post = {
-  id: string
-  author: {
-    name: string
-    handle: string
-    avatar: string
-    isPremium: boolean
-  }
-  content: string
-  image?: string
-  likes: number
-  comments: number
-  shares: number
-  isPremiumPost: boolean
-  timestamp: string
-  liked: boolean
-  requiredSubscriptionTier?: string
-  minimumTierRequired?: string
-  hasAccess: boolean
-  creatorId?: string
-}
 
-const POSTS_PER_PAGE = 10  // Number of posts to load each timeconst POSTS_PER_PAGE = 10  // Number of posts to load each time
+const POSTS_PER_PAGE = 10
 
 export function PostFeed() {
-  // Add a cache key that changes on each mount
-  const cacheKey = useRef(Date.now())
-  const seenPostIds = useRef(new Set<string>())
+  // Use the new usePosts hook
+  const { 
+    posts, 
+    error, 
+    isLoading, 
+    isLoadingMore, 
+    hasMore, 
+    fetchNextPage, 
+    updatePost, 
+    lastItemRef 
+  } = usePosts(POSTS_PER_PAGE);
   
-  const [posts, setPosts] = useState<Post[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [hasMore, setHasMore] = useState(true)
-  const [lastPostId, setLastPostId] = useState<string | null>(null)
   const { getToken } = useAuth()
   const { user } = useUser()
-  const observer = useRef<IntersectionObserver | null>(null);
-  const router  = useRouter();
-  const { isPremium, subscriptions } = useExtendedUser()
+  const router = useRouter();
+  const { permissions, isLoadingPermissions } = useUserPermissions();
+  const { subscriptions, isLoadingSubscriptions } = useSubscriptionStatus();
+  const isPremium = permissions?.isPremium || false;
   
   // Add subscription dialog states
   const [showSubscribeDialog, setShowSubscribeDialog] = useState(false)
@@ -66,18 +50,6 @@ export function PostFeed() {
   // Add image preview states
   const [imagePreviewOpen, setImagePreviewOpen] = useState(false)
   const [currentImageUrl, setCurrentImageUrl] = useState<string>("")
-
-  // Add a cleanup effect
-  useEffect(() => {
-    return () => {
-      setPosts([])
-      setLastPostId(null)
-      setHasMore(true)
-      if (observer.current) {
-        observer.current.disconnect()
-      }
-    }
-  }, [])
 
   const canViewPremiumContent = useCallback((post: Post) => {
     // If user has platform premium, they can see all content
@@ -93,9 +65,9 @@ export function PostFeed() {
     }
 
     // Check if user has an active subscription to this creator
-    if (subscriptions && post.author.handle) {
+    if (subscriptions?.creatorSubscriptions && post.author.handle) {
       const creatorId = post.author.handle.replace('@', '');
-      const hasCreatorSub = subscriptions.some(
+      const hasCreatorSub = subscriptions.creatorSubscriptions.some(
         sub => sub.creatorId === creatorId && sub.status === 'active'
       );
       if (hasCreatorSub) return true;
@@ -105,105 +77,8 @@ export function PostFeed() {
     return post.hasAccess === true;
   }, [user, isPremium, subscriptions]);
 
-  const fetchPosts = useCallback(async () => {
-    if (loading || !hasMore) return;
-
-    try {
-      setLoading(true)
-      const token = await getToken()
-      
-      const url = new URL('http://localhost:8080/api/social/posts')
-      if (lastPostId) {
-        url.searchParams.append('lastId', lastPostId)
-      }
-      url.searchParams.append('limit', POSTS_PER_PAGE.toString())
-
-      const response = await fetch(url.toString(), {
-        headers: {
-          'Authorization': token ? `Bearer ${token}` : '',
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch posts')
-      }
-
-      const fetchedPosts = await response.json()      
-      // Filter out any posts we've already seen
-      const uniquePosts = fetchedPosts.filter((post: Post) => {
-        if (seenPostIds.current.has(post.id)) {
-          return false
-        }
-        seenPostIds.current.add(post.id)
-        return true
-      })
-
-      if (uniquePosts.length === 0) {
-        setHasMore(false)
-        return
-      }
-
-      // Fetch like status for unique posts
-      const postsWithLikeStatus = await Promise.all(
-        uniquePosts.map(async (post: Post) => {
-          try {
-            const likeResponse = await fetch(
-              `http://localhost:8080/api/social/posts/${post.id}/like/status`,
-              {
-                headers: {
-                  'Authorization': token ? `Bearer ${token}` : '',
-                }
-              }
-            );
-            if (likeResponse.ok) {
-              const { liked } = await likeResponse.json();
-              return { ...post, liked };
-            }
-          } catch (error) {
-            console.error('Error fetching like status:', error);
-          }
-          return post;
-        })
-      );
-      
-      if (postsWithLikeStatus.length < POSTS_PER_PAGE) {
-        setHasMore(false)
-      }
-      
-      if (postsWithLikeStatus.length > 0) {
-        setLastPostId(postsWithLikeStatus[postsWithLikeStatus.length - 1].id)
-        setPosts(prev => [...prev, ...postsWithLikeStatus])
-      }
-
-    } catch (err) {
-      console.error('Error fetching posts:', err)
-      setError('Failed to load posts')
-    } finally {
-      setLoading(false)
-    }
-  }, [loading, hasMore, lastPostId, getToken]) // Removed posts dependency
-
-  const lastPostElementRef = useCallback((node: HTMLElement | null) => {
-    if (loading) return;
-    if (observer.current) observer.current.disconnect();
-
-    observer.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore) {
-        fetchPosts();
-      }
-    });
-
-    if (node) observer.current.observe(node);
-  }, [loading, hasMore, fetchPosts]);
-
-  // Add a function to generate unique keys
-  const getUniqueKey = (post: Post, index: number) => {
-    // Use both post.id and index to ensure uniqueness
-    return `${post.id}-${index}`;
-  };
-
   const handleLike = async (e: React.MouseEvent, postId: string, currentLikes: number, isCurrentlyLiked: boolean) => {
-    e.stopPropagation(); // Add this to prevent navigation
+    e.stopPropagation(); // Prevent navigation
     try {
       const token = await getToken();
       if (!token) {
@@ -212,15 +87,10 @@ export function PostFeed() {
       }
 
       // Optimistically update UI
-      setPosts(posts.map(post => 
-        post.id === postId 
-          ? { 
-              ...post, 
-              liked: !isCurrentlyLiked,
-              likes: isCurrentlyLiked ? post.likes - 1 : post.likes + 1 
-            } 
-          : post
-      ));
+      updatePost(postId, { 
+        liked: !isCurrentlyLiked,
+        likes: isCurrentlyLiked ? currentLikes - 1 : currentLikes + 1 
+      });
 
       const response = await fetch(`http://localhost:8080/api/social/posts/${postId}/like`, {
         method: 'POST',
@@ -231,20 +101,12 @@ export function PostFeed() {
 
       if (!response.ok) {
         // Revert optimistic update if failed
-        setPosts(posts.map(post => 
-          post.id === postId 
-            ? { 
-                ...post, 
-                liked: isCurrentlyLiked,
-                likes: currentLikes 
-              } 
-            : post
-        ));
+        updatePost(postId, { 
+          liked: isCurrentlyLiked,
+          likes: currentLikes
+        });
         throw new Error('Failed to update like');
       }
-
-      const data = await response.json();
-      console.log(`Post ${postId} ${data.liked ? 'liked' : 'unliked'} successfully`);
 
     } catch (error) {
       console.error('Error updating like:', error);
@@ -279,8 +141,7 @@ export function PostFeed() {
         throw new Error('Failed to delete post');
       }
 
-      // Remove post from state
-      setPosts(posts.filter(post => post.id !== postId));
+      // Remove post from display
       toast.success('Post deleted successfully');
 
     } catch (error) {
@@ -296,7 +157,7 @@ export function PostFeed() {
     }
 
     try {
-      setLoading(true);
+      setShowSubscribeDialog(false);
       const token = await getToken();
       
       // Add validation for creator subscriptions
@@ -304,9 +165,6 @@ export function PostFeed() {
         toast.error("Creator ID is required for creator subscriptions");
         return;
       }
-
-      // Debug log
-      console.log("Creating subscription:", { type, creatorId, tierId: type === 'platform' ? 'premium-monthly' : 'creator-basic' });
 
       const response = await fetch('http://localhost:8080/api/subscriptions/create', {
         method: 'POST',
@@ -341,15 +199,8 @@ export function PostFeed() {
     } catch (error) {
       console.error('Subscription error:', error);
       toast.error('Failed to start subscription process');
-    } finally {
-      setLoading(false);
     }
   };
-
-  // Initial load
-  useEffect(() => {
-    fetchPosts()
-  }, [fetchPosts])
 
   const handlePostClick = (e: React.MouseEvent, post: Post) => {
     // Prevent navigation if premium content and no access
@@ -371,15 +222,31 @@ export function PostFeed() {
     setImagePreviewOpen(true)
   }
 
-  if (error) return <div className="p-4 text-center text-red-500">{error}</div>
+  // New function to handle intersection with bottom of list
+  const bottomObserverRef = useRef<IntersectionObserver | null>(null);
+
+  // Set up auto-loading when approaching bottom of feed
+  const bottomRef = useCallback((node: HTMLDivElement | null) => {
+    if (bottomObserverRef.current) bottomObserverRef.current.disconnect();
+    
+    bottomObserverRef.current = new IntersectionObserver(entries => {
+      if (entries[0]?.isIntersecting && hasMore && !isLoadingMore) {
+        fetchNextPage();
+      }
+    }, { threshold: 0.5 });
+
+    if (node) bottomObserverRef.current.observe(node);
+  }, [fetchNextPage, hasMore, isLoadingMore]);
+
+  if (error) return <div className="p-4 text-center text-red-500">{error.message || 'Failed to load posts'}</div>
   
-  // Show centered spinner for initial loading
-  if (loading && posts.length === 0) {
+  // Show loading state while fetching permissions, subscriptions, or initial posts
+  if (isLoading || isLoadingPermissions || isLoadingSubscriptions) {
     return (
       <div className="h-[200px] flex items-center justify-center">
         <Spinner />
       </div>
-    )
+    );
   }
 
   return (
@@ -395,7 +262,7 @@ export function PostFeed() {
             const postContent = (
               <Card 
                 className="border-border hover:border-blue-500 transition-colors cursor-pointer relative" 
-                onClick={(e) => handlePostClick(e, post)}  // Replace the direct router.push with handlePostClick
+                onClick={(e) => handlePostClick(e, post)}
               >
                 <CardHeader className="flex flex-row items-center space-y-0 gap-3">
                   <Avatar>
@@ -446,6 +313,8 @@ export function PostFeed() {
                     </DropdownMenu>
                   </div>
                 </CardHeader>
+                
+                {/* ...existing CardContent... */}
                 <CardContent className="space-y-4">
                   <div className={`${!hasAccess && isPremiumContent ? 'blur-md select-none' : ''}`}>
                     <p className="text-sm whitespace-pre-line">{post.content}</p>
@@ -490,16 +359,16 @@ export function PostFeed() {
                               handleSubscribe("creator", creatorId);
                             }}
                             className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white"
-                            disabled={loading}
                           >
-                            {loading ? "Processing..." : "Subscribe Now"}
+                            Subscribe Now
                           </Button>
                         </div>
                       </div>
                     </div>
                   )}
                 </CardContent>
-                <CardFooter onClick={(e) => e.stopPropagation()}> {/* Stop propagation for all footer actions */}
+                
+                <CardFooter onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center gap-4 text-muted-foreground">
                     <Button 
                       variant="ghost" 
@@ -512,7 +381,6 @@ export function PostFeed() {
                       />
                       <span className="ml-2 text-xs">{post.likes}</span>
                     </Button>
-                    {/* Stop propagation for other buttons too */}
                     <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
                       <MessageCircle className="w-4 h-4" />
                       <span className="ml-2 text-xs">{post.comments}</span>
@@ -526,24 +394,27 @@ export function PostFeed() {
               </Card>
             );
 
-            return (
-              <div
-                key={getUniqueKey(post, index)}
-                ref={index === posts.length - 1 ? lastPostElementRef : undefined}
-              >
-                {postContent}
-              </div>
-            );
+            // Use the lastItemRef for the last item to trigger prefetching
+            if (index === posts.length - 1) {
+              return (
+                <div key={post.id} ref={lastItemRef}>
+                  {postContent}
+                </div>
+              );
+            }
+
+            return <div key={post.id}>{postContent}</div>;
           })}
           
-          {/* Bottom loading spinner */}
-          {loading && (
-            <div className="py-4 flex items-center justify-center">
-              <Spinner />
+          {/* Auto-loading trigger element - replace the Load More button with this */}
+          {hasMore && (
+            <div ref={bottomRef} className="py-4 flex items-center justify-center">
+              {isLoadingMore && <Spinner />}
             </div>
           )}
         </>
       )}
+      
       {/* Add SubscriptionDialog at the bottom of the component */}
       <SubscriptionDialog 
         open={showSubscribeDialog}
@@ -551,8 +422,9 @@ export function PostFeed() {
         type={subscriptionType}
         creatorId={selectedCreator}
         onSubscribe={handleSubscribe}
-        loading={loading}
+        loading={isLoadingMore}
       />
+      
       {/* Add ImagePreview component */}
       <ImagePreview
         open={imagePreviewOpen}

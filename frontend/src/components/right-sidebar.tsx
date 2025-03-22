@@ -12,6 +12,7 @@ import { toast } from "sonner"
 import { useUser } from "@clerk/nextjs"
 import { useExtendedUser } from "@/hooks/useExtendedUser"
 import { Search } from "lucide-react"
+import { useUserPermissions, useSubscriptionStatus } from "@/lib/swr/usePermissions"
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 

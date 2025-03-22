@@ -51,10 +51,12 @@ func RegisterRoutes(app *fiber.App) {
 	social.Get("/posts/:id", handlers.NewPostHandler().GetPost)
 	social.Get("/posts", handlers.NewPostHandler().GetAllPosts)
 	social.Delete("/posts/:id", handlers.NewPostHandler().DeletePost)
+	social.Post("/posts/batch", handlers.NewPostHandler().BatchGetPosts) // New batch posts endpoint
 
 	// Like routes
 	social.Post("/posts/:postId/like", handlers.NewLikeHandler().ToggleLike)
 	social.Get("/posts/:postId/like/status", handlers.NewLikeHandler().GetLikeStatus)
+	social.Post("/posts/batch/like-status", handlers.NewLikeHandler().BatchGetLikeStatus) // New batch endpoint
 
 	// Comment routes
 	social.Post("/posts/:postId/comments", handlers.NewCommentHandler().CreateComment)
