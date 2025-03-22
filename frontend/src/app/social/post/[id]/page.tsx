@@ -49,12 +49,13 @@ export default function PostDetailPage() {
 
   // Get post from store and store functions
   const { 
-    currentPost: post, 
+    currentPost: post,
+    posts, // Get all posts from store
     setCurrentPost, 
     updatePost,
     error,
     setError
-  } = useSocialStore()
+  } = useSocialStore();
 
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
@@ -64,41 +65,64 @@ export default function PostDetailPage() {
   useEffect(() => {
     const fetchPostDetails = async () => {
       try {
-        setLoading(true)
-        const token = await getToken()
-        
-        // Fetch post details
-        const res = await fetch(`http://localhost:8080/api/social/posts/${id}`, {
-          headers: { 'Authorization': token ? `Bearer ${token}` : '' }
-        })
-        if (!res.ok) throw new Error("Failed to load post")
-        const postData = await res.json()
-        setCurrentPost(postData)
+        setLoading(true);
 
-        // Fetch comments
-        const commentRes = await fetch(`http://localhost:8080/api/social/posts/${id}/comments`, {
-          headers: { 'Authorization': token ? `Bearer ${token}` : '' }
-        })
-        if (commentRes.ok) {
-          const commentData = await commentRes.json()
-          setComments(commentData)
+        // First check if the post exists in the store
+        const existingPost = posts.find(p => p.id === id);
+        if (existingPost) {
+          setCurrentPost(existingPost);
+          
+          // Fetch comments only
+          const token = await getToken();
+          const commentRes = await fetch(`http://localhost:8080/api/social/posts/${id}/comments`, {
+            headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+          });
+          
+          if (commentRes.ok) {
+            const commentData = await commentRes.json();
+            setComments(commentData);
+          }
+          
+          setLoading(false);
+          return;
         }
-      } catch (error) {
-        setError(error as Error)
-        toast.error("Error loading post")
-      } finally {
-        setLoading(false)
-      }
-    }
 
-    fetchPostDetails()
-    
-    // Cleanup on unmount
+        // If post not in store, fetch it
+        const token = await getToken();
+        const [postRes, commentRes] = await Promise.all([
+          fetch(`http://localhost:8080/api/social/posts/${id}`, {
+            headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+          }),
+          fetch(`http://localhost:8080/api/social/posts/${id}/comments`, {
+            headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+          })
+        ]);
+
+        if (!postRes.ok) throw new Error("Failed to load post");
+        
+        const postData = await postRes.json();
+        setCurrentPost(postData);
+
+        if (commentRes.ok) {
+          const commentData = await commentRes.json();
+          setComments(commentData);
+        }
+
+      } catch (error) {
+        setError(error as Error);
+        toast.error("Error loading post");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPostDetails();
+
     return () => {
-      setCurrentPost(null)
-      setError(null)
-    }
-  }, [id, getToken, setCurrentPost, setError])
+      setCurrentPost(null);
+      setError(null);
+    };
+  }, [id, getToken, setCurrentPost, setError, posts]);
 
   // Handle like functionality
   const handleLike = async (e: React.MouseEvent) => {
