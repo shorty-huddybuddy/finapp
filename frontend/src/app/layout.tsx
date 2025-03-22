@@ -37,8 +37,9 @@ export default function RootLayout({
           <SWRConfig 
             value={{
               errorRetryCount: 2,
-              shouldRetryOnError: true,
+              shouldRetryOnError: false,
               revalidateOnFocus: false,
+              revalidateOnReconnect: false,
               dedupingInterval: 300000, // 5 minutes
               focusThrottleInterval: 300000, // 5 minutes
               provider: () => new Map(), // Add a cache provider
