@@ -105,7 +105,7 @@ export function Navbar() {
           initial="hidden"
           animate="visible"
           variants={navVariants}
-          className="container mx-auto px-6 py-4 flex justify-between items-center"
+          className="gap-4 container mx-auto px-6 py-4 flex justify-between items-center"
         >
           <motion.div variants={itemVariants} className="flex items-center space-x-3">
             <LineChart className="h-7 w-7 text-blue-200" />
@@ -125,7 +125,7 @@ export function Navbar() {
           {/* Desktop Navigation */}
           <motion.div
             variants={navVariants}
-            className="hidden md:flex items-center space-x-8" // Ensure proper spacing between items
+            className="gap-2hidden md:flex items-center space-x-8" // Ensure proper spacing between items
           >
             <motion.a
               variants={itemVariants}
