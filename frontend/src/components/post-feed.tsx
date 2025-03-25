@@ -15,7 +15,7 @@ import { useRouter } from 'next/navigation'
 import { SubscriptionDialog } from "./subscription-dialog"
 import { loadStripe } from "@stripe/stripe-js"
 import { ImagePreview } from "@/components/image-preview"
-import { usePosts } from "@/lib/swr/usePosts" 
+import { usePosts, clearPostsCache } from "@/lib/swr/usePosts" 
 import { Post } from "@/types/social"
 import { useSocialStore } from "@/hooks/store/social" 
 import { useAuthStore } from "@/hooks/store/auth" 
@@ -66,6 +66,12 @@ export function PostFeed() {
     mutate
   } = usePosts(POSTS_PER_PAGE);
   
+  // Clear cache and refetch on mount
+  useEffect(() => {
+    clearPostsCache();
+    mutate();
+  }, [mutate]);
+
   // Fetch posts on mount if needed
   useEffect(() => {
     if (posts.length === 0 && !isLoading) {
@@ -193,7 +199,6 @@ export function PostFeed() {
         toast.error('You can only delete your own posts');
         return;
       }
-
       const response = await fetch(`http://localhost:8080/api/social/posts/${postId}`, {
         method: 'DELETE',
         headers: {
@@ -284,8 +289,9 @@ export function PostFeed() {
 
   // Add debug button for testing
   const refreshPosts = useCallback(() => {
-    console.log('Manual refresh triggered');
+    clearPostsCache();
     setLoading(true);
+    setPosts([]); // Clear existing posts
     mutate()
       .then(() => {
         console.log('Refresh complete');
@@ -295,7 +301,7 @@ export function PostFeed() {
         console.error('Refresh error', error);
         setLoading(false);
       });
-  }, [mutate, setLoading]);
+  }, [mutate, setLoading, setPosts]);
 
   if (error) return <div className="p-4 text-center text-red-500">{error.message || 'Failed to load posts'}</div>;
   
