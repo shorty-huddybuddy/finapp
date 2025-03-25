@@ -67,12 +67,12 @@ export default function PostDetailPage() {
       try {
         setLoading(true);
 
-        // First check if the post exists in the store
-        const existingPost = posts.find(p => p.id === id);
-        if (existingPost) {
-          setCurrentPost(existingPost);
+        // Check if post exists in store first
+        const cachedPost = useSocialStore.getState().getFromCache(id);
+        if (cachedPost) {
+          setCurrentPost(cachedPost);
           
-          // Fetch comments only
+          // Only fetch comments for existing post
           const token = await getToken();
           const commentRes = await fetch(`http://localhost:8080/api/social/posts/${id}/comments`, {
             headers: { 'Authorization': token ? `Bearer ${token}` : '' }
@@ -87,7 +87,7 @@ export default function PostDetailPage() {
           return;
         }
 
-        // If post not in store, fetch it
+        // If not in cache, verify post exists before fetching details
         const token = await getToken();
         const [postRes, commentRes] = await Promise.all([
           fetch(`http://localhost:8080/api/social/posts/${id}`, {
@@ -97,6 +97,12 @@ export default function PostDetailPage() {
             headers: { 'Authorization': token ? `Bearer ${token}` : '' }
           })
         ]);
+
+        if (postRes.status === 404) {
+          // Post was deleted, clean up store
+          useSocialStore.getState().removePost(id);
+          throw new Error("Post has been deleted");
+        }
 
         if (!postRes.ok) throw new Error("Failed to load post");
         
@@ -110,7 +116,7 @@ export default function PostDetailPage() {
 
       } catch (error) {
         setError(error as Error);
-        toast.error("Error loading post");
+        toast.error(error instanceof Error ? error.message : "Error loading post");
       } finally {
         setLoading(false);
       }
@@ -122,7 +128,7 @@ export default function PostDetailPage() {
       setCurrentPost(null);
       setError(null);
     };
-  }, [id, getToken, setCurrentPost, setError, posts]);
+  }, [id, getToken, setCurrentPost, setError]);
 
   // Handle like functionality
   const handleLike = async (e: React.MouseEvent) => {

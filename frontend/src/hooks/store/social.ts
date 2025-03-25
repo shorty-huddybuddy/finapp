@@ -9,6 +9,7 @@ interface SocialStore {
   error: Error | null
   hasMore: boolean
   postCache: Map<string, Post>; // Add post cache
+  isTransitioning: boolean;
   setPosts: (posts: Post[]) => void
   setCurrentPost: (post: Post | null) => void
   setIsPremiumView: (isPremium: boolean) => void
@@ -22,6 +23,7 @@ interface SocialStore {
   updateCurrentPost: (data: Partial<Post>) => void
   addToCache: (post: Post) => void;
   getFromCache: (id: string) => Post | undefined;
+  setIsTransitioning: (isTransitioning: boolean) => void;
 }
 
 export const useSocialStore = create<SocialStore>((set, get) => ({
@@ -32,6 +34,7 @@ export const useSocialStore = create<SocialStore>((set, get) => ({
   error: null,
   hasMore: true,
   postCache: new Map(),
+  isTransitioning: false,
   setPosts: (posts) => set((state) => {
     // Create a Set of existing post IDs for quick lookup
     const existingIds = new Set(state.posts.map(p => p.id));
@@ -84,9 +87,46 @@ export const useSocialStore = create<SocialStore>((set, get) => ({
       posts: [...state.posts, ...uniquePosts]
     };
   }),
-  removePost: (postId) => set((state) => ({
-    posts: state.posts.filter(p => p.id !== postId)
-  })),
+  removePost: (postId: string) => set((state) => {
+    // Start transition
+    state.setIsTransitioning(true);
+
+    // Remove from posts array with animation delay
+    setTimeout(() => {
+      set((state) => {
+        const newPosts = state.posts.filter(p => p.id !== postId);
+        const newCache = new Map(state.postCache);
+        newCache.delete(postId);
+        const newCurrentPost = state.currentPost?.id === postId ? null : state.currentPost;
+
+        // Update localStorage cache
+        try {
+          const cacheKey = 'posts-cache';
+          const cached = localStorage.getItem(cacheKey);
+          if (cached) {
+            const { data, timestamp } = JSON.parse(cached);
+            if (data.posts) {
+              data.posts = data.posts.filter((p: Post) => p.id !== postId);
+              localStorage.setItem(cacheKey, JSON.stringify({ data, timestamp }));
+            }
+          }
+        } catch (e) {
+          console.error('Error updating cache:', e);
+        }
+
+        // End transition
+        state.setIsTransitioning(false);
+
+        return {
+          posts: newPosts,
+          currentPost: newCurrentPost,
+          postCache: newCache,
+        };
+      });
+    }, 300); // Match this with CSS transition duration
+
+    return state;
+  }),
   updatePost: (postId, data) => set((state) => ({
     posts: state.posts.map(post => 
       post.id === postId ? { ...post, ...data } : post
@@ -106,4 +146,5 @@ export const useSocialStore = create<SocialStore>((set, get) => ({
     return { postCache: newCache };
   }),
   getFromCache: (id) => get().postCache.get(id),
+  setIsTransitioning: (isTransitioning) => set({ isTransitioning }),
 }))
