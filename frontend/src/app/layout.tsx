@@ -21,10 +21,10 @@ export default function RootLayout({
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading delay
+    // Simulate loading delay (reduced to 100ms for faster navigation)
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 800);
+    }, 100);
     
     return () => clearTimeout(timer);
   }, []);
