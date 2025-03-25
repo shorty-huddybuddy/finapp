@@ -84,6 +84,13 @@ export function StoreProvider({ children }: StoreProviderProps) {
     
     return () => clearTimeout(timer);
   }, [initialized]);
+
+  // Add cache cleanup on signout
+  useEffect(() => {
+    if (!isSignedIn) {
+      localStorage.removeItem('posts-cache');
+    }
+  }, [isSignedIn]);
   
   // Show loading state during initialization
   if (!initialized) {
