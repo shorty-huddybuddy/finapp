@@ -20,7 +20,7 @@ import Head from 'next/head';
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   // Add useEffect to ensure proper initialization
   useEffect(() => {
     // Force re-render of dropdown elements
@@ -100,7 +100,7 @@ export function Navbar() {
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
       </Head>
 
-      <div className="bg-gradient-to-r from-blue-700 to-blue-900 text-white shadow-lg relative navbar-font">
+      <div className="bg-gradient-to-r   text-blue shadow-lg relative navbar-font"> 
         <motion.nav
           initial="hidden"
           animate="visible"
@@ -131,7 +131,7 @@ export function Navbar() {
               variants={itemVariants}
               whileHover={{ scale: 1.05 }}
               href="/"
-              className="text-blue-100 transition-all duration-300 font-medium no-underline flex items-center gap-2 whitespace-nowrap"
+              className="text-blue-600  hover:text-black transition-all duration-300 font-medium no-underline flex items-center gap-2 whitespace-nowrap"
             >
               <LineChart className="w-4 h-4" />
               Home
@@ -141,7 +141,7 @@ export function Navbar() {
               variants={itemVariants}
               whileHover={{ scale: 1.05 }}
               href="/social"
-              className="text-blue-100 transition-all duration-300 font-medium no-underline flex items-center gap-2 whitespace-nowrap"
+              className="text-blue-600  hover:text-black transition-all duration-300 font-medium no-underline flex items-center gap-2 whitespace-nowrap"
             >
               <Users className="w-4 h-4" />
               Social Trading
@@ -149,19 +149,37 @@ export function Navbar() {
 
             <motion.div
               variants={itemVariants}
-              className="relative group"
+              className="relative"
               style={{ zIndex: 1050 }}
+              onMouseEnter={() => setDropdownOpen(true)}
+              onMouseLeave={() => setDropdownOpen(false)}
             >
-              <button className="flex items-center text-blue-100 hover:text-white transition-all duration-300 font-medium gap-2 whitespace-nowrap">
+             <button className="flex items-center text-blue-600 hover:text-black transition-all duration-300 font-medium gap-2 whitespace-nowrap">
                 <BarChart className="w-4 h-4" />
                 Market Data
                 <svg className="ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
-              <div className="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                <a href="/stock-dashboard" className="block px-4 py-2 text-gray-800 hover:bg-blue-100 no-underline">Stocks</a>
-                <a href="/finance-dashboard" className="block px-4 py-2 text-gray-800 hover:bg-blue-100 no-underline">Cryptocurrencies</a>
+              <div
+                 className={`absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 transition-all duration-200 ${
+                   dropdownOpen
+                     ? "opacity-100 pointer-events-auto"
+                     : "opacity-0 pointer-events-none"
+                 }`}
+               >
+                 <a
+                   href="/stock-dashboard"
+                   className="block px-4 py-2 text-gray-800 hover:bg-blue-100 no-underline"
+                 >
+                   Stocks
+                 </a>
+                 <a
+                   href="/finance-dashboard"
+                   className="block px-4 py-2 text-gray-800 hover:bg-blue-100 no-underline"
+                 >
+                   Cryptocurrencies
+                 </a>
               </div>
             </motion.div>
 
@@ -169,8 +187,7 @@ export function Navbar() {
               variants={itemVariants}
               whileHover={{ scale: 1.05 }}
               href="/calendar"
-              className="text-blue-100 transition-all duration-300 font-medium no-underline flex items-center gap-2 whitespace-nowrap"
-            >
+              className="text-blue-600  hover:text-black transition-all duration-300 font-medium no-underline flex items-center gap-2 whitespace-nowrap"            >
               <Calendar className="w-4 h-4" />
               Calendar
             </motion.a>
@@ -179,8 +196,7 @@ export function Navbar() {
               variants={itemVariants}
               whileHover={{ scale: 1.05 }}
               href="/ai_landing"
-              className="text-blue-100 transition-all duration-300 font-medium no-underline flex items-center gap-2 whitespace-nowrap"
-            >
+              className="text-blue-600  hover:text-black transition-all duration-300 font-medium no-underline flex items-center gap-2 whitespace-nowrap"            >
               <Brain className="w-4 h-4" />
               AI Tools
             </motion.a>
@@ -189,8 +205,7 @@ export function Navbar() {
               variants={itemVariants}
               whileHover={{ scale: 1.05 }}
               href="/portfolio"
-              className="text-blue-100 transition-all duration-300 font-medium no-underline flex items-center gap-2 whitespace-nowrap"
-            >
+              className="text-blue-600  hover:text-black transition-all duration-300 font-medium no-underline flex items-center gap-2 whitespace-nowrap"            >
               <Wallet className="w-4 h-4" />
               Portfolio
             </motion.a>
@@ -199,8 +214,7 @@ export function Navbar() {
               variants={itemVariants}
               whileHover={{ scale: 1.05 }}
               href="/education"
-              className="text-blue-100 transition-all duration-300 font-medium no-underline flex items-center gap-2 whitespace-nowrap"
-            >
+              className="text-blue-600  hover:text-black transition-all duration-300 font-medium no-underline flex items-center gap-2 whitespace-nowrap"            >
               <GraduationCap className="w-4 h-4" />
               Education
             </motion.a>
@@ -209,8 +223,7 @@ export function Navbar() {
               variants={itemVariants}
               whileHover={{ scale: 1.05 }}
               href="/predictions"
-              className="text-blue-100 transition-all duration-300 font-medium no-underline flex items-center gap-2 whitespace-nowrap"
-            >
+              className="text-blue-600  hover:text-black transition-all duration-300 font-medium no-underline flex items-center gap-2 whitespace-nowrap"            >
               <ChartLineUp className="w-4 h-4" />
               Predictions
             </motion.a>
