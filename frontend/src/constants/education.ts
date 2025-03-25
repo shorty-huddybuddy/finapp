@@ -75,7 +75,7 @@ export const educationContent = [
         type: "book",
         description: "Benjamin Graham's classic text on value investing strategy",
         source: "Benjamin Graham",
-        link: "#"
+        link: "https://yourknowledgedigest.org/wp-content/uploads/2020/04/the-intelligent-investor.pdf"
       },
       {
         title: "Understanding Financial Statements",
@@ -83,23 +83,23 @@ export const educationContent = [
         description: "How to read and analyze company financial reports",
         source: "Investopedia",
         duration: "15 min read",
-        link: "#"
+        link: "https://www.investopedia.com/terms/f/financial-statements.asp"
       },
       {
         title: "Stock Valuation Models Explained",
         type: "video",
         description: "Detailed walkthrough of DCF and comparable company analysis",
-        source: "Finance Academy",
+        source: "Investopedia",
         duration: "28 min",
-        link: "#"
+        link: "https://www.investopedia.com/articles/fundamental-analysis/11/choosing-valuation-methods.asp"
       },
       {
         title: "Market Cycles and Timing Strategies",
         type: "article",
         description: "Understanding economic cycles and their impact on stock prices",
-        source: "Market Analysis Journal",
+        source: "Investopeida",
         duration: "12 min read",
-        link: "#"
+        link: "https://www.investopedia.com/terms/m/market_cycles.asp"
       }
     ],
     glossary: [
@@ -251,31 +251,31 @@ export const educationContent = [
         type: "book",
         description: "Comprehensive guide to bond investing strategies and markets",
         source: "Annette Thau",
-        link: "#"
+        link: "https://students.aiu.edu/submissions/profiles/resources/onlineBook/D7g6b3_The_Bond_Book_Everything_Investors_Need_to_Know_About_Treasuries-_Municipals-_GNMAs-_Corporates.pdf"
       },
       {
         title: "Understanding Bond Yield Curves",
         type: "article",
         description: "How to interpret yield curves and their economic implications",
-        source: "Fixed Income Quarterly",
+        source: "Investopedia",
         duration: "15 min read",
-        link: "#"
+        link: "https://www.investopedia.com/terms/y/yieldcurve.asp"
       },
       {
         title: "Bond Portfolio Construction",
         type: "video",
         description: "Strategies for building and managing a fixed-income portfolio",
-        source: "Investment Academy",
-        duration: "24 min",
-        link: "#"
+        source: "Charles Schwab",
+        duration: "28 min",
+        link: "https://www.youtube.com/watch?v=UkVbFped0j8"
       },
       {
         title: "Credit Ratings Explained",
         type: "article",
         description: "How bond ratings work and what they mean for investors",
-        source: "Bond Market Journal",
+        source: "S&P Global",
         duration: "12 min read",
-        link: "#"
+        link: "https://www.spglobal.com/ratings/en/about/understanding-credit-ratings"
       }
     ],
     glossary: [
@@ -427,31 +427,31 @@ export const educationContent = [
         type: "book",
         description: "Comprehensive guide to Bitcoin and blockchain technology",
         source: "Andreas M. Antonopoulos",
-        link: "#"
+        link: "https://unglueit-files.s3.amazonaws.com/ebf/05db7df4f31840f0a873d6ea14dcc28d.pdf"
       },
       {
         title: "Crypto Market Analysis",
         type: "article",
         description: "How to research and evaluate cryptocurrency projects",
-        source: "CoinDesk",
+        source: "Fidelity",
         duration: "18 min read",
-        link: "#"
+        link: "https://www.fidelity.com/learning-center/trading-investing/crypto/evaluate-cryptocurrencies"
       },
       {
         title: "Securing Your Crypto Assets",
         type: "video",
         description: "Step-by-step guide to crypto security best practices",
-        source: "Crypto Academy",
-        duration: "32 min",
-        link: "#"
+        source: "Every Bit Helps",
+        duration: "11 min",
+        link: "https://www.youtube.com/watch?v=TWR_o26_Odg"
       },
       {
         title: "DeFi Explained",
         type: "article",
         description: "Introduction to decentralized finance applications and protocols",
-        source: "Blockchain Journal",
+        source: "Investopedia",
         duration: "15 min read",
-        link: "#"
+        link: "https://www.investopedia.com/decentralized-finance-defi-5113835"
       }
     ],
     glossary: [
@@ -602,31 +602,31 @@ export const educationContent = [
         title: "Fixed Income Investing Guide",
         type: "book",
         description: "Comprehensive overview of fixed deposits and other secure investments",
-        source: "Financial Planning Association",
-        link: "#"
+        source: "PWL Capital",
+        link: "https://pwlcapital.com/wp-content/uploads/2024/08/2019-11-29_PWL_WP_R-Kerzerho_Guide-Fixed-Income-Investing.pdf"
       },
       {
         title: "FD Interest Rate Comparison Tool",
         type: "tool",
         description: "Interactive calculator to compare fixed deposit options across institutions",
-        source: "Personal Finance Portal",
-        link: "#"
+        source: "Groww",
+        link: "https://groww.in/calculators/fd-calculator"
       },
       {
         title: "Tax Strategies for Fixed Deposits",
         type: "article",
         description: "Optimizing tax efficiency with your fixed deposit investments",
         source: "Tax Planning Weekly",
-        duration: "10 min read",
-        link: "#"
+        duration: "Ujjivan Small Finance Bank",
+        link: "https://www.ujjivansfb.in/banking-blogs/deposits/how-to-minimise-and-save-tax-on-fixed-deposit-interest#:~:text=Another%20way%20to%20minimise%20taxes,in%20period%20of%205%20years."
       },
       {
         title: "FD Laddering Demonstration",
         type: "video",
         description: "Step-by-step guide to creating an effective deposit ladder",
-        source: "Investment Education Channel",
-        duration: "18 min",
-        link: "#"
+        source: "Money Control",
+        duration: "4 min",
+        link: "https://www.youtube.com/watch?v=jZTd34Sd5IA"
       }
     ],
     glossary: [
@@ -778,7 +778,7 @@ export const educationContent = [
         type: "book",
         description: "A beginner’s guide to forex trading and currency markets",
         source: "Brian Dolan",
-        link: "#"
+        link: "https://viptrade.ge/frontend-assets/books/Currency_Trading_For_Dummies_2nd_Edition_by_Brian_Dolan.pdf"
       },
       {
         title: "Commodity Futures Explained",
@@ -786,23 +786,23 @@ export const educationContent = [
         description: "Introduction to futures contracts and how they work in commodity trading",
         source: "Investopedia",
         duration: "15 min read",
-        link: "#"
+        link: "https://www.investopedia.com/terms/c/commodityfuturescontract.asp"
       },
       {
         title: "Forex Market Fundamentals",
-        type: "video",
+        type: "article",
         description: "Understanding key drivers of foreign exchange prices",
-        source: "Trading Academy",
+        source: "Investopedia",
         duration: "30 min",
-        link: "#"
+        link: "https://www.investopedia.com/articles/trading/04/031704.asp"
       },
       {
         title: "Global Trade and Commodity Prices",
         type: "article",
         description: "The impact of international trade policies on commodity pricing",
-        source: "Economic Review Journal",
+        source: "Trading Economies",
         duration: "12 min read",
-        link: "#"
+        link: "https://tradingeconomics.com/commodities"
       }
     ],
     glossary: [
@@ -952,7 +952,7 @@ export const educationContent = [
         type: "book",
         description: "Benjamin Graham's classic text on value investing and fundamental analysis",
         source: "Benjamin Graham",
-        link: "#"
+        link: "https://yourknowledgedigest.org/wp-content/uploads/2020/04/the-intelligent-investor.pdf"
       },
       {
         title: "How to Read Financial Statements",
@@ -960,23 +960,23 @@ export const educationContent = [
         description: "A guide to understanding corporate financial reports",
         source: "Investopedia",
         duration: "12 min read",
-        link: "#"
+        link: "https://www.investopedia.com/terms/f/financial-statements.asp"
       },
       {
         title: "Financial Ratio Analysis Explained",
         type: "video",
         description: "A breakdown of the most important ratios for evaluating stocks",
-        source: "Finance Academy",
-        duration: "22 min",
-        link: "#"
+        source: "Accounting Stuff",
+        duration: "24 min",
+        link: "https://www.youtube.com/watch?v=3W_LwpeG8c8"
       },
       {
         title: "Economic Indicators and Stock Performance",
         type: "article",
         description: "How economic trends impact the stock market and individual investments",
-        source: "Market Analysis Journal",
+        source: "Investopedia",
         duration: "15 min read",
-        link: "#"
+        link: "https://www.investopedia.com/ask/answers/032415/what-are-most-common-market-indicators-follow-us-stock-market-and-economy.asp"
       }
     ],
     glossary: [
@@ -1125,15 +1125,15 @@ export const educationContent = [
         type: "book",
         description: "A comprehensive guide to technical analysis techniques and tools.",
         source: "John Murphy",
-        link: "#"
+        link: "https://sharemarketclasses.in/wp-content/uploads/2024/08/Technical_Analysis_of_the_Financial.pdf"
       },
       {
         title: "Mastering Technical Indicators",
         type: "video",
         description: "A step-by-step guide to using indicators like RSI and MACD.",
-        source: "Trading Academy",
-        duration: "30 min",
-        link: "#"
+        source: "Peachy Investor",
+        duration: "20 min",
+        link: "https://www.youtube.com/watch?v=MygajfeNe9E"
       },
       {
         title: "Candlestick Charting Explained",
@@ -1141,7 +1141,7 @@ export const educationContent = [
         description: "Learn the basics of candlestick patterns and their meanings.",
         source: "Investopedia",
         duration: "12 min read",
-        link: "#"
+        link: "https://www.investopedia.com/trading/candlestick-charting-what-is-it/"
       }
     ],
     glossary: [
@@ -1290,23 +1290,23 @@ export const educationContent = [
         type: "book",
         description: "A guide to legally reducing your tax liabilities while investing.",
         source: "Tom Wheelwright",
-        link: "#"
+        link: "https://archive.org/details/bwb_W8-BPG-945/page/n5/mode/2up"
       },
       {
         title: "Understanding Global Markets",
         type: "article",
         description: "An overview of international markets and how they impact investment opportunities.",
-        source: "Investopedia",
+        source: "University of Kansas",
         duration: "20 min read",
-        link: "#"
+        link: "https://onlinemba.ku.edu/experience-ku/mba-blog/global-business-and-economics-understanding-and-operating-in-the-international-market"
       },
       {
         title: "Tax-Efficient Investment Strategies",
         type: "video",
         description: "Learn how to optimize your portfolio while minimizing tax liability.",
-        source: "Finance Academy",
+        source: "Sherman",
         duration: "30 min",
-        link: "#"
+        link: "https://www.youtube.com/watch?v=kTyPCJO2EyU"
       }
     ],
     glossary: [
@@ -1454,32 +1454,32 @@ export const educationContent = [
         title: "Mutual Funds for Beginners",
         type: "book",
         description: "An introductory guide to mutual fund investing",
-        source: "John Doe",
-        link: "#"
+        source: "SEC",
+        link: "https://www.sec.gov/investor/pubs/sec-guide-to-mutual-funds.pdf"
       },
       {
         title: "How to Analyze a Mutual Fund",
         type: "article",
         description: "Understanding key mutual fund metrics and performance indicators",
-        source: "Investopedia",
+        source: "Groww",
         duration: "15 min read",
-        link: "#"
+        link: "https://groww.in/blog/parameters-analyze-mutual-fund"
       },
       {
         title: "Active vs Passive Investing",
-        type: "video",
+        type: "article",
         description: "Comparison of actively managed and index mutual funds",
-        source: "Finance Academy",
-        duration: "28 min",
-        link: "#"
+        source: "Investopedia",
+        duration: "12 min read",
+        link: "https://www.investopedia.com/news/active-vs-passive-investing/"
       },
       {
         title: "Mutual Fund Taxation Guide",
         type: "article",
         description: "Learn how mutual funds are taxed based on holding period and fund type",
-        source: "Tax Insights Journal",
+        source: "cleartax",
         duration: "12 min read",
-        link: "#"
+        link: "https://cleartax.in/s/different-mutual-funds-taxed"
       }
     ],
     glossary: [
@@ -1625,25 +1625,25 @@ export const educationContent = [
         title: "The Importance of Insurance",
         type: "article",
         description: "A detailed guide on why insurance is crucial for financial stability.",
-        source: "Investopedia",
+        source: "ICICI Prudential",
         duration: "12 min read",
-        link: "#"
+        link: "https://www.iciciprulife.com/insurance/insurance-importance.html"
       },
       {
         title: "How to Choose the Right Insurance Policy",
         type: "video",
         description: "A step-by-step guide on selecting the best coverage for your needs.",
-        source: "Finance Academy",
-        duration: "18 min",
-        link: "#"
+        source: "Texas Department of Insurance",
+        duration: "6 mins",
+        link: "https://www.youtube.com/watch?v=EAUj7EwQfGY"
       },
       {
         title: "Understanding Insurance Deductibles",
         type: "article",
         description: "How deductibles work and their impact on premiums.",
-        source: "Market Analysis Journal",
+        source: "iii.org",
         duration: "10 min read",
-        link: "#"
+        link: "https://www.iii.org/article/understanding-your-insurance-deductibles"
       }
     ],
     glossary: [

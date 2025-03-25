@@ -64,19 +64,20 @@ export function FeaturesSectionWithHoverEffects() {
       id: "technical-analysis",
     },
     {
-      title: "Currency, Commodity, and Government Securities",
-      description:
-        "Access global markets through forex, commodities, and sovereign debt investments.",
-      icon: <CurrencyExchangeIcon />,
-      id: "currency-commodity",
-    },
-    {
       title: "Markets and Taxation",
       description:
         "Understand tax implications of your investments and optimize for tax efficiency.",
       icon: <IconTerminal2 />,
       id: "markets-taxation",
     },
+    {
+      title: "Currency, Commodity, and Government Securities",
+      description:
+        "Access global markets through forex, commodities, and sovereign debt investments.",
+      icon: <CurrencyExchangeIcon />,
+      id: "currency-commodity",
+    },
+    
     {
       title: "Fixed Deposits",
       description:
@@ -95,7 +96,7 @@ export function FeaturesSectionWithHoverEffects() {
           Expand your financial knowledge with our comprehensive educational materials
         </p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 relative z-10 py-10 max-w-7xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-y-4 gap-x-4 relative z-10 py-10 max-w-7xl mx-auto">
         {features.map((feature, index) => (
           <Feature key={feature.title} {...feature} index={index} />
         ))}
@@ -117,6 +118,18 @@ const Feature = ({
   index: number;
   id: string;
 }) => {
+  const bgColors = [
+    "bg-red-100",
+    "bg-green-100",
+    "bg-blue-100",
+    "bg-yellow-100",
+    "bg-purple-100",
+    "bg-pink-100",
+    "bg-cyan-100",
+    "bg-teal-100",
+  ];
+  const bgColor = bgColors[index % bgColors.length];
+
   // Calculate the position based on the index
   const row = Math.floor(index / 4);
   const col = index % 4;
@@ -125,6 +138,7 @@ const Feature = ({
     <Link href={`/education/${id}`} className="block">
       <div
         className={cn(
+          bgColor,
           "flex flex-col py-10 relative group/feature cursor-pointer",
           "transition-all duration-300 ease-in-out",
           "hover:shadow-lg hover:z-20 hover:scale-105",
