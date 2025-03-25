@@ -6,7 +6,7 @@ import { ArrowRight, BarChart3, FileText, LineChart, PieChart, Wallet } from "lu
 import Link from "next/link"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
-import { Navbar } from "@/components/Navbar"
+import { Navbar2 } from "@/components/Navbar2"
 import {Footer} from "../../components/Footer";
 
 export default function HomePage() {
@@ -60,7 +60,7 @@ export default function HomePage() {
 
   return (
     <div className="bg-white">
-    <Navbar/>
+    <Navbar2/>
     <main className="mx-auto px-4 py-12 max-w-7xl">
       
       <div className="text-center mb-16 space-y-4">

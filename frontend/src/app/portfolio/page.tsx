@@ -9,7 +9,7 @@ import { Plus, Trash2, DollarSign, TrendingUp, TrendingDown, Edit2, Command } fr
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
-import {Navbar } from '../../components/Navbar'
+import {Navbar2 } from '../../components/Navbar2'
 import {Footer} from '../../components/Footer'
 
 import {
@@ -370,7 +370,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white text-blue-900 p-8">
       
-      <Navbar/><br/><br/>
+      <Navbar2/><br/><br/>
 
       <Toaster position="top-right" />
       {!isLoaded ? (
