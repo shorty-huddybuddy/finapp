@@ -4,9 +4,39 @@ import { useCallback, useEffect } from 'react';
 import { Post, PostsResponse } from '@/types/social';
 import { useSocialStore } from '@/hooks/store/social';
 
+const CACHE_KEY = 'posts-cache';
+const CACHE_EXPIRY = 2 * 60 * 1000; // 2 minutes
+
+// Add cache helpers
+const getCache = () => {
+  try {
+    const cache = localStorage.getItem(CACHE_KEY);
+    if (!cache) return null;
+    
+    const { data, timestamp } = JSON.parse(cache);
+    if (Date.now() - timestamp > CACHE_EXPIRY) {
+      localStorage.removeItem(CACHE_KEY);
+      return null;
+    }
+    return data;
+  } catch (e) {
+    return null;
+  }
+};
+
+const setCache = (data: PostsResponse) => {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({
+      data,
+      timestamp: Date.now()
+    }));
+  } catch (e) {
+    console.error('Failed to set cache:', e);
+  }
+};
+
 // In-memory cache for first page of posts
 let postsCache: { data: PostsResponse | null, timestamp: number } | null = null;
-const CACHE_EXPIRY = 2 * 60 * 1000; // 2 minutes
 
 export function usePosts(pageSize = 10, skip = false) {
   const { getToken } = useAuth();
@@ -40,10 +70,13 @@ export function usePosts(pageSize = 10, skip = false) {
   // Fetch function for SWRInfinite with caching for first page
   const fetchPosts = useCallback(async ([_, cursor, limit]: [string, string | null, number]) => {
     try {
-      // Use cache for first page only
-      if (!cursor && postsCache && Date.now() - postsCache.timestamp < CACHE_EXPIRY) {
-        console.log('Using cached post data for first page');
-        return postsCache.data as PostsResponse;
+      // Only use cache for first page and if no cursor
+      if (!cursor) {
+        const cachedData = getCache();
+        if (cachedData) {
+          console.log('Using cached post data');
+          return cachedData;
+        }
       }
       
       const token = await getToken();
@@ -58,27 +91,23 @@ export function usePosts(pageSize = 10, skip = false) {
         headers: {
           'Authorization': token ? `Bearer ${token}` : '',
         },
-        cache: cursor ? 'no-store' : 'force-cache' // Cache first page
+        cache: 'no-store' // Disable browser cache
       });
       
       if (!response.ok) throw new Error('Failed to fetch posts');
       
       const data = await response.json() as PostsResponse;
-      console.log(`Fetched ${data.posts?.length || 0} posts`);
       
-      // Cache first page
+      // Cache only first page
       if (!cursor) {
-        postsCache = {
-          data,
-          timestamp: Date.now()
-        };
+        setCache(data);
       }
       
       return data;
     } catch (err) {
       console.error('Error fetching posts:', err);
       setError(err as Error);
-      throw err as Error;
+      throw err;
     }
   }, [getToken, setError]);
   
@@ -129,6 +158,19 @@ export function usePosts(pageSize = 10, skip = false) {
       setHasMore(!!lastPage?.nextPageCursor);
     }
   }, [pagesData, setPosts, addPosts, setHasMore]);
+
+  // Clear cache when component unmounts or on error
+  useEffect(() => {
+    return () => {
+      localStorage.removeItem(CACHE_KEY);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (error) {
+      localStorage.removeItem(CACHE_KEY);
+    }
+  }, [error]);
   
   // Return a simpler API for external components
   return {
@@ -159,6 +201,11 @@ export function usePosts(pageSize = 10, skip = false) {
 // Invalidate posts cache
 export function invalidatePostsCache() {
   postsCache = null;
+}
+
+// Add function to manually clear cache
+export function clearPostsCache() {
+  localStorage.removeItem(CACHE_KEY);
 }
 
 export type { Post } from '@/types/social';
