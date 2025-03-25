@@ -98,7 +98,7 @@ import { SymbolOverviewWidget } from "../../components/symbol-overview-widget";
 import { CustomScreener } from "../../components/custom-screener";
 import { TradingViewChart } from "../../components/trading-view-chart";
 import { StockSearch } from "../../components/stock-search";
-import { Navbar } from "../../components/Navbar";
+import { Navbar2 } from "../../components/Navbar2";
 import { Footer } from "../../components/Footer";
 import { Chatbot } from "../../components/Chatbot"; // New chatbot component
 import crypto from "crypto";
@@ -116,7 +116,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
+      <Navbar2 />
       <div className="container mx-auto p-4 space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
           <h1 className="text-2xl font-bold">Stock Dashboard</h1>

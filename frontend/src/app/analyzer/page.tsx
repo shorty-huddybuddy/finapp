@@ -6,7 +6,7 @@ import InvestmentForm from "../../components/InvestmentForm"
 import ResultDisplay from "../../components/ResultDisplay"
 import { motion, AnimatePresence } from "framer-motion"
 import { Nav } from "react-day-picker"
-import { Navbar } from "@/components/Navbar"
+import { Navbar2 } from "@/components/Navbar2"
 
 export default function App() {
   const [result, setResult] = useState(null)
@@ -14,7 +14,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-200">
-      <Navbar />
+      <Navbar2 />
       {/* <Header /> */}
       <main className="flex-grow py-8">
         <div className="max-w-7xl mx-auto px-4">

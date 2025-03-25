@@ -1,4 +1,4 @@
-import { Navbar } from "../../components/Navbar";
+import { Navbar2 } from "../../components/Navbar2";
 import { Footer } from "../../components/Footer";
 import React from "react";
 import { FeaturesSectionWithHoverEffects } from "../../components/feature-section-with-hover-effects";
@@ -6,7 +6,7 @@ import { FeaturesSectionWithHoverEffects } from "../../components/feature-sectio
 export default function Education() {
     return (
         <div className="flex flex-col min-h-screen">
-            <Navbar />
+            <Navbar2 />
             <div className="w-full flex-grow">
                 <FeaturesSectionWithHoverEffects />
             </div>

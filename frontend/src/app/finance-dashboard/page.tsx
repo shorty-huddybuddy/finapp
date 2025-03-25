@@ -13,7 +13,7 @@ import TopCoins from "../../components/TopCoins"
 import SearchResults from "../../components/SearchResults"
 import { getCryptoData } from "../../services/api"
 import crypto from "crypto" // Import crypto for user verification
-import { Navbar } from "../../components/Navbar"
+import { Navbar2 } from "../../components/Navbar2"
 import { Footer } from "../../components/Footer"
 import { Loader } from "../../components/Loader"
 import { Chatbot } from "../../components/Chatbot" // New Botpress Chatbot component
@@ -85,7 +85,7 @@ export default function Dashboard() {
 
   return (
     <div>
-    <Navbar/>
+    <Navbar2/>
     <div className="min-h-screen bg-white text-gray-800 p-4">
      
       <br /><br/>
