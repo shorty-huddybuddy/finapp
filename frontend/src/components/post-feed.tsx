@@ -15,10 +15,11 @@ import { useRouter } from 'next/navigation'
 import { SubscriptionDialog } from "./subscription-dialog"
 import { loadStripe } from "@stripe/stripe-js"
 import { ImagePreview } from "@/components/image-preview"
-import { usePosts, clearPostsCache } from "@/lib/swr/usePosts" 
+import { usePosts, clearPostsCache, invalidatePostsCache } from "@/lib/swr/usePosts" 
 import { Post } from "@/types/social"
 import { useSocialStore } from "@/hooks/store/social" 
 import { useAuthStore } from "@/hooks/store/auth" 
+import { AnimatePresence, motion } from "framer-motion";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
@@ -199,6 +200,11 @@ export function PostFeed() {
         toast.error('You can only delete your own posts');
         return;
       }
+
+      // First remove from UI
+      removePost(postId);
+
+      // Then delete from backend
       const response = await fetch(`http://localhost:8080/api/social/posts/${postId}`, {
         method: 'DELETE',
         headers: {
@@ -207,15 +213,31 @@ export function PostFeed() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete post');
+        // If deletion fails, refresh posts to restore state
+        toast.error('Failed to delete post');
+        clearPostsCache();
+        mutate();
+        return;
       }
 
-      removePost(postId);
+      // On successful deletion:
       toast.success('Post deleted successfully');
+      
+      // Clear all caches
+      clearPostsCache();
+      invalidatePostsCache();
+      localStorage.removeItem('posts-cache');
+
+      // Ensure post is removed from all stores
+      useSocialStore.getState().removePost(postId);
+      
+      // Force a fresh fetch if needed
+      mutate();
 
     } catch (error) {
       console.error('Error deleting post:', error);
       toast.error('Failed to delete post');
+      mutate(); // Refresh to ensure consistent state
     }
   };
 
@@ -329,167 +351,195 @@ export function PostFeed() {
         </Button>
       </div>
 
-      {posts.length === 0 ? (
-        <div className="text-center text-muted-foreground">No posts yet</div>
-      ) : (
-        <>
-          {posts.map((post, index) => {
-            const hasAccess = canViewPremiumContent(post);
-            const isPremiumContent = post.isPremiumPost || post.author.isPremium;
-            
-            const postContent = (
-              <Card 
-                className="border-border hover:border-blue-500 transition-colors cursor-pointer relative" 
-                onClick={(e) => handlePostClick(e, post)}
-              >
-                <CardHeader className="flex flex-row items-center space-y-0 gap-3">
-                  <Avatar>
-                    <AvatarImage src={post.author.avatar} />
-                    <AvatarFallback>{post.author.name.slice(0, 2)}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
+      <AnimatePresence mode="popLayout">
+        {posts.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="text-center text-muted-foreground"
+          >
+            No posts yet
+          </motion.div>
+        ) : (
+          <div>
+            {posts.map((post, index) => {
+              const hasAccess = canViewPremiumContent(post);
+              const isPremiumContent = post.isPremiumPost || post.author.isPremium;
+              
+              const postContent = (
+                <motion.div
+                  layout
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{
+                    layout: { duration: 0.3 },
+                    opacity: { duration: 0.2 }
+                  }}
+                >
+                  <Card 
+                    className="border-border hover:border-blue-500 transition-colors cursor-pointer relative" 
+                    onClick={(e) => handlePostClick(e, post)}
+                  >
+                    <CardHeader className="flex flex-row items-center space-y-0 gap-3">
+                      <Avatar>
+                        <AvatarImage src={post.author.avatar} />
+                        <AvatarFallback>{post.author.name.slice(0, 2)}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <Link href={`/profile/${post.author.handle}`} className="font-semibold hover:underline">
+                              {post.author.name}
+                            </Link>
+                          </div>
+                          {post.author.isPremium && (
+                            <Badge variant="secondary">
+                              <Star className="w-3 h-3 mr-1" />
+                              PRO
+                            </Badge>
+                          )}
+                          <span className="text-sm text-muted-foreground">· {post.timestamp}</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{post.author.handle}</p>
+                      </div>
                       <div onClick={(e) => e.stopPropagation()}>
-                        <Link href={`/profile/${post.author.handle}`} className="font-semibold hover:underline">
-                          {post.author.name}
-                        </Link>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(`/posts/${post.id}`)}>
+                              Copy link
+                            </DropdownMenuItem>
+                            {user && `@${user.username || user.id}` === post.author.handle && (
+                              <DropdownMenuItem
+                                onClick={() => handleDeletePost(post.id, post.author.handle)}
+                                className="text-red-600 focus:text-red-600"
+                              >
+                                Delete post
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem>Report post</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
-                      {post.author.isPremium && (
-                        <Badge variant="secondary">
-                          <Star className="w-3 h-3 mr-1" />
-                          PRO
-                        </Badge>
-                      )}
-                      <span className="text-sm text-muted-foreground">· {post.timestamp}</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{post.author.handle}</p>
-                  </div>
-                  <div onClick={(e) => e.stopPropagation()}>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => navigator.clipboard.writeText(`/posts/${post.id}`)}>
-                          Copy link
-                        </DropdownMenuItem>
-                        {user && `@${user.username || user.id}` === post.author.handle && (
-                          <DropdownMenuItem
-                            onClick={() => handleDeletePost(post.id, post.author.handle)}
-                            className="text-red-600 focus:text-red-600"
+                    </CardHeader>
+                    
+                    <CardContent className="space-y-4">
+                      <div className={`${!hasAccess && isPremiumContent ? 'blur-md select-none' : ''}`}>
+                        <p className="text-sm whitespace-pre-line">{post.content}</p>
+                        {post.image && (
+                          <div 
+                            className="relative aspect-video w-full overflow-hidden rounded-lg mt-2"
+                            onClick={(e) => handleImageClick(e, post.image || "")}
                           >
-                            Delete post
-                          </DropdownMenuItem>
+                            <Image 
+                              src={post.image || "/placeholder.svg"} 
+                              alt="Post image" 
+                              fill 
+                              className="object-cover cursor-pointer hover:brightness-90 transition-all" 
+                            />
+                          </div>
                         )}
-                        <DropdownMenuItem>Report post</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="space-y-4">
-                  <div className={`${!hasAccess && isPremiumContent ? 'blur-md select-none' : ''}`}>
-                    <p className="text-sm whitespace-pre-line">{post.content}</p>
-                    {post.image && (
-                      <div 
-                        className="relative aspect-video w-full overflow-hidden rounded-lg mt-2"
-                        onClick={(e) => handleImageClick(e, post.image || "")}
-                      >
-                        <Image 
-                          src={post.image || "/placeholder.svg"} 
-                          alt="Post image" 
-                          fill 
-                          className="object-cover cursor-pointer hover:brightness-90 transition-all" 
-                        />
                       </div>
-                    )}
-                  </div>
 
-                  {isPremiumContent && !hasAccess && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm z-10">
-                      <div className="text-center p-6">
-                        <div className="mb-4">
-                          <Badge className="mb-2">
-                            <Star className="w-3 h-3 mr-1 text-yellow-500" />
-                            Premium Content
-                          </Badge>
-                          <h3 className="text-lg font-semibold text-yellow-900">
-                            Subscribe to {post.author.name}
-                          </h3>
-                          <p className="text-sm text-yellow-700 mt-1">
-                            Get access to all premium content
-                          </p>
+                      {isPremiumContent && !hasAccess && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm z-10">
+                          <div className="text-center p-6">
+                            <div className="mb-4">
+                              <Badge className="mb-2">
+                                <Star className="w-3 h-3 mr-1 text-yellow-500" />
+                                Premium Content
+                              </Badge>
+                              <h3 className="text-lg font-semibold text-yellow-900">
+                                Subscribe to {post.author.name}
+                              </h3>
+                              <p className="text-sm text-yellow-700 mt-1">
+                                Get access to all premium content
+                              </p>
+                            </div>
+                            
+                            <div className="flex gap-2 justify-center">
+                              <Button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const creatorId = post.author.handle.replace('@', '');
+                                  handleSubscribe("creator", creatorId);
+                                }}
+                                className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white"
+                              >
+                                Subscribe Now
+                              </Button>
+                            </div>
+                          </div>
                         </div>
-                        
-                        <div className="flex gap-2 justify-center">
-                          <Button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const creatorId = post.author.handle.replace('@', '');
-                              handleSubscribe("creator", creatorId);
-                            }}
-                            className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white"
-                          >
-                            Subscribe Now
-                          </Button>
-                        </div>
+                      )}
+                    </CardContent>
+                    
+                    <CardFooter onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-4 text-muted-foreground">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className={`hover:text-red-500 ${post.liked ? 'text-red-500' : ''}`}
+                          onClick={(e) => handleLike(e, post.id, post.likes, post.liked)}
+                        >
+                          <Heart 
+                            className={post.liked ? "w-4 h-4 fill-red-500 text-red-500" : "w-4 h-4"} 
+                          />
+                          <span className="ml-2 text-xs">{post.likes}</span>
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
+                          <MessageCircle className="w-4 h-4" />
+                          <span className="ml-2 text-xs">{post.comments}</span>
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
+                          <Share className="w-4 h-4" />
+                          <span className="ml-2 text-xs">{post.shares}</span>
+                        </Button>
                       </div>
-                    </div>
-                  )}
-                </CardContent>
-                
-                <CardFooter onClick={(e) => e.stopPropagation()}>
-                  <div className="flex items-center gap-4 text-muted-foreground">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className={`hover:text-red-500 ${post.liked ? 'text-red-500' : ''}`}
-                      onClick={(e) => handleLike(e, post.id, post.likes, post.liked)}
-                    >
-                      <Heart 
-                        className={post.liked ? "w-4 h-4 fill-red-500 text-red-500" : "w-4 h-4"} 
-                      />
-                      <span className="ml-2 text-xs">{post.likes}</span>
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
-                      <MessageCircle className="w-4 h-4" />
-                      <span className="ml-2 text-xs">{post.comments}</span>
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
-                      <Share className="w-4 h-4" />
-                      <span className="ml-2 text-xs">{post.shares}</span>
-                    </Button>
-                  </div>
-                </CardFooter>
-              </Card>
-            );
-
-            // Fix: Use a unique key by combining post ID with index
-            const uniqueKey = `${post.id}-${index}`;
-            
-            if (index === posts.length - 1) {
-              return (
-                <div key={uniqueKey} ref={lastPostRef}>
-                  {postContent}
-                </div>
+                    </CardFooter>
+                  </Card>
+                </motion.div>
               );
-            }
 
-            return <div key={uniqueKey}>{postContent}</div>;
-          })}
-          
-          {(hasMore || isInfiniteLoading) && (
-            <div className="py-8 flex flex-col items-center justify-center gap-2">
-              <Spinner className="w-8 h-8 text-blue-500" />
-              <p className="text-sm text-muted-foreground">
-                {isInfiniteLoading ? 'Loading more posts...' : 'Scroll for more'}
-              </p>
-            </div>
-          )}
-        </>
-      )}
+              // Fix: Use a unique key by combining post ID with index
+              const uniqueKey = `${post.id}-${index}`;
+              
+              if (index === posts.length - 1) {
+                return (
+                  <div key={uniqueKey} ref={lastPostRef}>
+                    {postContent}
+                  </div>
+                );
+              }
+
+              return <div key={uniqueKey}>{postContent}</div>;
+            })}
+            
+            {/* Loading indicator with animation */}
+            <AnimatePresence>
+              {(hasMore || isInfiniteLoading) && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="py-8 flex flex-col items-center justify-center gap-2"
+                >
+                  <Spinner className="w-8 h-8 text-blue-500" />
+                  <p className="text-sm text-muted-foreground">
+                    {isInfiniteLoading ? 'Loading more posts...' : 'Scroll for more'}
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+      </AnimatePresence>
       
       <SubscriptionDialog 
         open={showSubscribeDialog}
