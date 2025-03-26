@@ -368,9 +368,11 @@ export default function Dashboard() {
   }
 
   return (
+    <div>
+      <Navbar2/>
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white text-blue-900 p-8">
       
-      <Navbar2/><br/><br/>
+      <br/><br/>
 
       <Toaster position="top-right" />
       {!isLoaded ? (
@@ -905,7 +907,9 @@ export default function Dashboard() {
         </>
       )}
 
-      <Footer/>
+      
+    </div>
+    <Footer/>
     </div>
   )
 }
