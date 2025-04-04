@@ -140,10 +140,10 @@ export function Navbar2() {
             )}
           </motion.button>
 
-          {/* Desktop Navigation */}
+          {/* Desktop Navigation - Fixed the className to remove 'hidden' */}
           <motion.div
             variants={navVariants}
-            className="gap-2hidden md:flex items-center space-x-8" // Ensure proper spacing between items
+            className="hidden md:flex items-center space-x-4"
           >
             <motion.a
               variants={itemVariants}
@@ -297,7 +297,7 @@ export function Navbar2() {
             opacity: isMenuOpen ? 1 : 0,
           }}
           transition={{ duration: 0.3 }}
-          className={`md:hidden overflow-hidden bg-blue-800 shadow-lg`}
+          className={`md:hidden overflow-hidden bg-blue-800 shadow-lg px-6 py-2`}
           style={{ zIndex: 1040 }}
         >
           <a
@@ -403,10 +403,10 @@ export function Navbar2() {
           </a>
 
           {/* Mobile Auth Button - Enhanced */}
-          <div className="mt-4 flex justify-center">
+          <div className="my-4 flex justify-center">
             <SignedOut>
               <SignInButton mode="modal">
-                <button className="w-full  bg-white text-blue-700 px-6 py-2 rounded-full font-semibold hover:bg-blue-50 hover:shadow transition-colors">
+                <button className="w-full bg-white text-blue-700 px-6 py-2 rounded-full font-semibold hover:bg-blue-50 hover:shadow transition-colors">
                   Sign In
                 </button>
               </SignInButton>
