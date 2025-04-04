@@ -9,25 +9,34 @@ interface PredictionChartProps {
   ticker: string;
 }
 
-const PredictionChart: React.FC<PredictionChartProps> = ({ ticker }) => {
-  const chartRef = useRef<HTMLCanvasElement>(null); // Reference for the chart instance
-  interface ChartData {
-    linear_regression: { Date: string; Prediction: number }[];
-    lstm: { Prediction: number[] }[];
-    gru: { Prediction: number[] }[];
-  }
+interface EnsembleModelData {
+  Date: string;
+  Prediction: string;
+}
 
-  const [chartData, setChartData] = useState<ChartData | null>(null); // State to store API data
+interface ApiResponse {
+  ensemble_model: EnsembleModelData[];
+}
+
+const PredictionChart: React.FC<PredictionChartProps> = ({ ticker }) => {
+  const chartRef = useRef<HTMLCanvasElement>(null);
+  const [chartData, setChartData] = useState<ApiResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Fetch data from the API
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setIsLoading(true);
+        setChartData(null);
+        
         const response = await axios.get(`http://127.0.0.1:8000/predict?ticker=${ticker}&number_of_days=10`);
-         console.log(response)
-        setChartData(response.data); // Store the API response in state
+        console.log(response);
+        setChartData(response.data);
+        setIsLoading(false);
       } catch (error) {
         console.error("Error fetching data:", error);
+        setIsLoading(false);
       }
     };
 
@@ -40,14 +49,13 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ ticker }) => {
       const ctx = chartRef.current.getContext("2d");
 
       // Extract data from the API response
-      const dates = chartData.linear_regression.map((entry) =>
+      const dates = chartData.ensemble_model.map(entry => 
         entry.Date.split(" ")[0]
       );
-      const linearRegressionPredictions = chartData.linear_regression.map(
-        (entry) => entry.Prediction
+      
+      const predictions = chartData.ensemble_model.map(entry => 
+        parseFloat(entry.Prediction)
       );
-      const lstmPredictions = chartData.lstm.map((entry) => entry.Prediction[0]);
-      const gruPredictions = chartData.gru.map((entry) => entry.Prediction[0]);
 
       // Destroy the previous chart instance if it exists
       if (chartRef.current.chart) {
@@ -61,23 +69,14 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ ticker }) => {
           labels: dates,
           datasets: [
             {
-              label: "Linear Regression",
-              data: linearRegressionPredictions,
+              label: `${ticker} Ensemble Model Prediction`,
+              data: predictions,
               borderColor: "rgba(75, 192, 192, 1)",
-              fill: false,
-            },
-            {
-              label: "LSTM",
-              data: lstmPredictions,
-              borderColor: "rgba(153, 102, 255, 1)",
-              fill: false,
-            },
-            {
-              label: "GRU",
-              data: gruPredictions,
-              borderColor: "rgba(255, 159, 64, 1)",
-              fill: false,
-            },
+              backgroundColor: "rgba(75, 192, 192, 0.2)",
+              borderWidth: 2,
+              fill: true,
+              tension: 0.1,
+            }
           ],
         },
         options: {
@@ -94,18 +93,43 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ ticker }) => {
               display: true,
               title: {
                 display: true,
-                text: "Prediction",
+                text: "Price Prediction ($)",
               },
             },
           },
+          plugins: {
+            title: {
+              display: true,
+              text: `${ticker} Stock Price Prediction`,
+              font: {
+                size: 16,
+                weight: 'bold'
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return `Price: $${context.parsed.y.toFixed(2)}`;
+                }
+              }
+            }
+          }
         },
       });
     }
-  }, [chartData]);
+  }, [chartData, ticker]);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-80">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+        <p className="ml-4 text-gray-600">Loading data for {ticker}...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-xl font-bold mb-4">Prediction Chart</h2>
       <canvas ref={chartRef} width="800" height="400"></canvas>
     </div>
   );

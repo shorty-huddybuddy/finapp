@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request , Query
+from fastapi import FastAPI, HTTPException, Request, Query
 from fastapi.responses import JSONResponse
 import datetime as dt
 import yfinance as yf
@@ -6,9 +6,9 @@ import numpy as np
 from sklearn import preprocessing
 from sklearn.linear_model import LinearRegression
 from fastapi.middleware.cors import CORSMiddleware
-import time , json , gc , random , os 
+import time, json, gc, random, os
 from apscheduler.schedulers.background import BackgroundScheduler
-from firebase_admin import credentials, firestore, initialize_app,db
+from firebase_admin import credentials, firestore, initialize_app, db
 from pydantic import BaseModel
 from typing import Optional, List, Dict
 from tensorflow.keras import backend as K
@@ -67,22 +67,37 @@ is_locked = False
 
 
 def save_prediction(ticker: str, predictions: dict):
-    ref = db.reference("/recommendations")
-    ref.child(ticker).set(predictions)  
+    """Save prediction data with timestamp to the database"""
+    try:
+        # Add a timestamp to the predictions
+        predictions["timestamp"] = str(dt.datetime.now())
+        
+        # Use Firebase Realtime Database
+        ref = db.reference("/predictions")
+        ref.child(ticker).set(predictions)
+        
+        print(f"Saved prediction for {ticker} with timestamp {predictions['timestamp']}")
+    except Exception as e:
+        print(f"Error saving prediction: {str(e)}")
 
 
-def delete_all_recommendations():
-    ref = db.reference("/recommendations")
-    ref.delete()  # This will delete all data under the 'recommendations' node
+def delete_all_predictions():
+    """Delete all data in the predictions node"""
+    try:
+        ref = db.reference("/predictions")
+        ref.delete()
+        print("All predictions deleted from database")
+    except Exception as e:
+        print(f"Error deleting predictions: {str(e)}")
 
 def midnight_task():
     """Function to be executed at midnight"""
     global is_locked
     is_locked = True  # Lock all routes
 
-    delete_all_recommendations()
+    delete_all_predictions()
 
-    stocks_to_add = ["MSFT" , "AAPL" , "AMZN" , "GOOGL" , "BRK-A" ]
+    stocks_to_add = ["MSFT", "AAPL", "AMZN", "GOOGL", "BRK-A"]
 
     for stock in stocks_to_add:
         reset_tf_session()  
@@ -90,7 +105,7 @@ def midnight_task():
         response_body = response.body.decode('utf-8')
         predictions_dict = json.loads(response_body)
         save_prediction(stock, predictions_dict)
-        print(f"Data for {stock} added to Firebase.")
+        print(f"Data for {stock} added to database.")
         gc.collect() 
     
     is_locked = False  # Unlock routes after task completion
@@ -145,20 +160,65 @@ async def block_routes_during_task(request: Request, call_next):
         return JSONResponse(content={"error": "Server is temporarily locked under maintainance , try again later after 30 minutes "}, status_code=503)
     return await call_next(request)
 
+def check_cached_prediction(ticker: str, number_of_days: int = 10):
+    """Check if we have a recent prediction cached in the database for this ticker."""
+    try:
+        # Use Firebase Realtime Database
+        ref = db.reference(f"/predictions/{ticker}")
+        cached_data = ref.get()
+        
+        if not cached_data:
+            print(f"No cached data found for {ticker}")
+            return None
+        
+        # Check if cache has a timestamp and if it's less than 1 day old
+        if "timestamp" in cached_data:
+            try:
+                cache_time = dt.datetime.fromisoformat(cached_data["timestamp"].replace(" ", "T"))
+                current_time = dt.datetime.now()
+                time_diff = current_time - cache_time
+                
+                # If cache is less than 1 day old, use the cached data
+                if time_diff.days < 1:
+                    print(f"Using cached data for {ticker} (age: {time_diff})")
+                    return cached_data
+                else:
+                    print(f"Cached data for {ticker} is too old (age: {time_diff})")
+            except ValueError as e:
+                print(f"Error parsing timestamp: {str(e)}")
+        
+        return None
+    except Exception as e:
+        print(f"Error checking cached prediction: {str(e)}")
+        return None
+
 @app.get("/predict")
 def get_stock_predictions(ticker: str = "AAPL", period: str = "1y", interval: str = "1h", number_of_days: int = 10):
+    # Check if we have a recent prediction cached
+    ticker = ticker.upper()
+    cached_prediction = check_cached_prediction(ticker, number_of_days)
+    
+    if cached_prediction:
+        # Remove the timestamp before returning to client
+        if "timestamp" in cached_prediction:
+            # Create a copy to avoid modifying the original
+            response_data = cached_prediction.copy()
+            # Keep timestamp info in the logs but don't send to client
+            print(f"Using cache from: {response_data['timestamp']}")
+            del response_data["timestamp"]
+            return JSONResponse(content=response_data)
+    
+    # If no valid cache exists, generate a new prediction
     reset_tf_session()  
-
     start_time = time.time()  
 
-    ticker = ticker.upper()
-    df_ml = yf.download(tickers=ticker, period=period, interval=interval)
+    # df_ml = yf.download(tickers=ticker, period=period, interval=interval)
 
-    if df_ml.empty:
-        for suffix in [".NS", "-USD", ".BO"]:
-            df_ml = yf.download(tickers=ticker + suffix, period=period, interval=interval)
-            if not df_ml.empty:
-                break
+    # if df_ml.empty:
+    for suffix in ["-USD", "" , ".NS", ".BO"]:
+        df_ml = yf.download(tickers=ticker + suffix, period=period, interval=interval)
+        if not df_ml.empty:
+            break
 
     if df_ml.empty:
         return JSONResponse(content={"error": "No stock data available for the given ticker and period"}, status_code=400)
@@ -232,7 +292,10 @@ def get_stock_predictions(ticker: str = "AAPL", period: str = "1y", interval: st
     }
 
     end_time = time.time()
-    print(end_time - start_time)
+    print(f"Prediction for {ticker} took {end_time - start_time} seconds")
+    
+    # Save the prediction to the database with a timestamp
+    save_prediction(ticker, result)
     
     gc.collect()  # Force garbage collection
     return JSONResponse(content=result)
@@ -241,15 +304,20 @@ def get_stock_predictions(ticker: str = "AAPL", period: str = "1y", interval: st
 @app.get("/recommendations")
 def get_recommendations():
     try:
-        # Reference the 'recommendations' node in Firebase
-        ref = db.reference("/recommendations")
+        # Use Firebase Realtime Database
+        ref = db.reference("/predictions")
         
-        # Retrieve all data under 'recommendations'
+        # Retrieve all data under 'predictions'
         recommendations = ref.get()
         
         # If no data is found
         if not recommendations:
             raise HTTPException(status_code=404, detail="No recommendations found")
+        
+        # Remove timestamps before returning the data
+        for ticker in recommendations:
+            if "timestamp" in recommendations[ticker]:
+                del recommendations[ticker]["timestamp"]
         
         # Return the recommendations as JSON
         return JSONResponse(content=recommendations)
@@ -268,4 +336,3 @@ def get_news(topic: str =  Query ("Latest News", alias="topic")):
     news = google_news.get_news(topic)
     # print(news)
     return JSONResponse(content=news)
-    
