@@ -125,13 +125,13 @@ export function Navbar() {
           {/* Desktop Navigation */}
           <motion.div
             variants={navVariants}
-            className="gap-2hidden md:flex items-center space-x-8" // Ensure proper spacing between items
+            className="hidden md:flex items-center space-x-4"
           >
             <motion.a
               variants={itemVariants}
               whileHover={{ scale: 1.05 }}
               href="/"
-              className="text-blue-600  hover:text-black transition-all duration-300 font-medium no-underline flex items-center gap-2 whitespace-nowrap"
+              className="text-blue-600 hover:text-black transition-all duration-300 font-medium no-underline flex items-center gap-2 whitespace-nowrap"
             >
               <LineChart className="w-4 h-4" />
               Home

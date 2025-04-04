@@ -81,42 +81,6 @@ def save_prediction(ticker: str, predictions: dict):
         print(f"Error saving prediction: {str(e)}")
 
 
-def delete_all_predictions():
-    """Delete all data in the predictions node"""
-    try:
-        ref = db.reference("/predictions")
-        ref.delete()
-        print("All predictions deleted from database")
-    except Exception as e:
-        print(f"Error deleting predictions: {str(e)}")
-
-def midnight_task():
-    """Function to be executed at midnight"""
-    global is_locked
-    is_locked = True  # Lock all routes
-
-    delete_all_predictions()
-
-    stocks_to_add = ["MSFT", "AAPL", "AMZN", "GOOGL", "BRK-A"]
-
-    for stock in stocks_to_add:
-        reset_tf_session()  
-        response = get_stock_predictions(stock)
-        response_body = response.body.decode('utf-8')
-        predictions_dict = json.loads(response_body)
-        save_prediction(stock, predictions_dict)
-        print(f"Data for {stock} added to database.")
-        gc.collect() 
-    
-    is_locked = False  # Unlock routes after task completion
-    print("Task completed!")
-
-    gc.collect()
-
-scheduler.add_job(midnight_task, 'cron', hour=1, minute=42, second=0)
-scheduler.start()
-
-
 def ensemble_model(X, y, X_forecast):
     # Define Input Layer
     input_layer = Input(shape=(X.shape[1], 1))
@@ -244,50 +208,11 @@ def get_stock_predictions(ticker: str = "AAPL", period: str = "1y", interval: st
     if len(X) == 0 or len(y) == 0:
         return JSONResponse(content={"error": "Dataset is empty after preprocessing"}, status_code=400)
 
-    # # Linear Regression Model
-    # clf = LinearRegression()
-    # clf.fit(X, y)
-    # forecast_lr = clf.predict(X_forecast).tolist()
-
-    # gc.collect()  # Force garbage collection
-
-    # # LSTM Model
-    # model_lstm = Sequential([
-    #     LSTM(64, input_shape=(len(X), len(X[0]))),
-    #     Dense(124, activation='relu'),
-    #     Dense(64, activation='relu'),
-    #     Dense(16, activation='relu'),
-    #     Dense(1, activation='relu')
-    # ])
-    # model_lstm.compile(optimizer=Adam(learning_rate=0.0001) , loss='mse', metrics=['mae'])
-    # model_lstm.fit(X, y, epochs=100 , batch_size=32, verbose=1)
-    # forecast_lstm = model_lstm.predict(X_forecast).tolist()
-
-    # gc.collect()  # Force garbage collection
-
-    # # GRU Model
-    # model_gru = Sequential([
-    #     GRU(64, return_sequences=True, input_shape=(X.shape[1], 1)),
-    #     Dropout(0.2),
-    #     GRU(64, return_sequences=False),
-    #     Dropout(0.2),
-    #     Dense(32, activation='relu'),
-    #     Dense(1)
-    # ])
-    # model_gru.compile(optimizer=Adam(learning_rate=0.0001), loss='mse', metrics=['mae'])
-    # model_gru.fit(X, y, epochs=100, batch_size=32, verbose=1)
-    # forecast_gru = model_gru.predict(X_forecast).tolist()   
-
-    # gc.collect()  # Force garbage collection
-
     forecast_ensemble = ensemble_model(X,y,X_forecast)
     print(forecast_ensemble)
 
     dates = [dt.datetime.today() + dt.timedelta(days=i) for i in range(forecast_out)]
     result = {
-        # "linear_regression": [{"Date": str(d), "Prediction": p} for d, p in zip(dates, forecast_lr)],
-        # "lstm": [{"Date": str(d), "Prediction": p[0]} for d, p in zip(dates, forecast_lstm)],
-        # "gru": [{"Date": str(d), "Prediction": p[0]} for d, p in zip(dates, forecast_gru)],
         "ensemble_model": [{"Date": str(d), "Prediction": str(p) } for d, p in zip(dates, forecast_ensemble)]
     }
 

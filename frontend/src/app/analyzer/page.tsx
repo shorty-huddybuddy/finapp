@@ -5,7 +5,6 @@ import { useState } from "react"
 import InvestmentForm from "../../components/InvestmentForm"
 import ResultDisplay from "../../components/ResultDisplay"
 import { motion, AnimatePresence } from "framer-motion"
-import { Nav } from "react-day-picker"
 import { Navbar2 } from "@/components/Navbar2"
 
 export default function App() {
@@ -15,12 +14,11 @@ export default function App() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-200">
       <Navbar2 />
-      {/* <Header /> */}
-      <main className="flex-grow py-8">
-        <div className="max-w-7xl mx-auto px-4">
+      <main className="flex-grow py-8"> 
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-center">
             <div className="w-full max-w-6xl">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <motion.div
                   className="w-full"
                   initial={{ opacity: 0 }}
@@ -32,11 +30,10 @@ export default function App() {
                   </div>
                 </motion.div>
 
-                {/* If no result yet, show an empty placeholder card on desktop */}
                 <AnimatePresence>
                   {!result && !isLoading && (
                     <motion.div
-                      className="hidden lg:block"
+                      className="hidden md:block"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 0.5 }}
                       exit={{ opacity: 0 }}
@@ -74,7 +71,6 @@ export default function App() {
           </div>
         </div>
       </main>
-      {/* <Footer /> */}
     </div>
   )
 }
