@@ -23,7 +23,6 @@ export default function Sidebar() {
       setInsights(await fetchInsights(token))
       setMarketEvents(await fetchMarketEvents(token))
       setRiskAlerts(await fetchRiskAlerts(token))
-      setGoals(await fetchGoals(token))
     }
     loadSidebarData()
   }, [])
@@ -31,10 +30,9 @@ export default function Sidebar() {
   return (
     <div className="h-full overflow-y-auto p-6 space-y-6">
       <SidebarSection title="Notifications" items={notifications} />
-      <SidebarSection title="AI Insights" items={insights} />
       <SidebarSectionpy title="Market Events" items={marketEvents} />
       <SidebarSectionpy title="Risk Alerts" items={riskAlerts} isAlert />
-      <Card>
+      {/* <Card>
         <CardHeader>    
           <CardTitle className="text-xl font-bold text-blue-800">Financial Goals</CardTitle>
         </CardHeader>
@@ -55,7 +53,7 @@ export default function Sidebar() {
             </motion.div>
           ))}
         </CardContent>
-      </Card>
+      </Card> */}
     </div>
   )
 }

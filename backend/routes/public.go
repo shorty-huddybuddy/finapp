@@ -20,12 +20,13 @@ func RegisterRoutes(app *fiber.App) {
 	calendarGroup.Post("/events", handlers.CreateEvent)
 	calendarGroup.Put("/events/:id", handlers.UpdateEvent)
 	calendarGroup.Delete("/events/:id", handlers.DeleteEvent)
-
+	
+	app.Post("/api/calendar/global",handlers.CreateGlobalEvent)
 	app.Get("/api/calender/notifications", handlers.FetchNotifications)
 	app.Get("/api/calender/insights", handlers.FetchInsights)
 	app.Get("/api/calender/market-events", handlers.FetchMarketEvents)
 	app.Get("/api/calender/risk-alerts", handlers.FetchRiskAlerts)
-	app.Get("/api/calender/goals", handlers.FetchGoals)
+	app.Get("/api/calendar/goals", handlers.FetchGoals)
 
 	// Subscription routes
 	subscriptions := app.Group("/api/subscriptions")

@@ -27,6 +27,7 @@ export default function Calendar() {
     const loadEvents = async () => {
       const token = await getToken()
       const fetchedEvents = await fetchEvents(token)
+      console.log(fetchedEvents)
       setEvents(fetchedEvents)
     }
     loadEvents()
@@ -38,6 +39,10 @@ export default function Calendar() {
   }, [])
 
   const handleEventClick = useCallback((clickInfo: EventClickArg) => {
+    if(clickInfo.event.extendedProps?.isGlobal){
+      return;
+    }
+
     setSelectedEvent(clickInfo.event.toPlainObject())
     setIsModalOpen(true)
   }, [])
@@ -45,16 +50,15 @@ export default function Calendar() {
   const handleEventAdd = useCallback(async (event: EventInput) => {
     const token = await getToken()
     const newEvent = await createEvent(event,token)
-    setEvents((prev) => [...prev, newEvent])
-    
-    // Force calendar to refresh events
-    if (calendarRef.current) {
-      const calendarApi = calendarRef.current.getApi()
-      calendarApi.addEvent(newEvent)
-    }
-  }, [])
+    const fetchedEvents = await fetchEvents(token);
+  setEvents(fetchedEvents);
+  }, [getToken])
 
   const handleEventUpdate = useCallback(async (event: EventInput) => {
+    if(event.extendedProps?.isGlobal){
+      return;
+    }
+
     const token = await getToken()
     const updatedEvent = await updateEvent(event,token)
     setEvents((prev) => prev.map((e) => (e.id === updatedEvent.id ? updatedEvent : e)))
@@ -74,6 +78,9 @@ export default function Calendar() {
   }, [])
 
   const handleEventDelete = useCallback(async (eventId: string) => {
+    const eventToDelete = events.find((e) => e.id === eventId);
+  if (eventToDelete?.extendedProps?.isGlobal) return;
+
     const token = await getToken()
     await deleteEvent(eventId,token)
     setEvents((prev) => prev.filter((e) => e.id !== eventId))
@@ -166,4 +173,6 @@ function getCategoryColor(category: string) {
       return "bg-gray-200 text-gray-800"
   }
 }
+
+
 

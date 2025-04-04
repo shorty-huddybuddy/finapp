@@ -109,7 +109,7 @@ export function Navbar() {
         >
           <motion.div variants={itemVariants} className="flex items-center space-x-3">
             <LineChart className="h-7 w-7 text-blue-200" />
-            <span className="text-2xl font-bold tracking-tight">FinanceHub</span>
+            <span className="text-2xl font-bold tracking-tight">FinAura</span>
           </motion.div>
 
           {/* Mobile menu button */}

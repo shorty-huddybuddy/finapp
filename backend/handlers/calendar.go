@@ -14,6 +14,7 @@ import (
 type extendedProps struct {
 	Category   string `json:"category"`
 	Recurrence string `json:"recurrence,omitempty"`
+	IsGlobal   bool   `json:"isGlobal,omitempty"`
 }
 
 type Event struct {
@@ -27,30 +28,91 @@ type Event struct {
 // Fetch all events from Firebase Realtime Database for a specific user
 func FetchEvents(c *fiber.Ctx) error {
 	ctx := context.Background()
-
 	userId := c.Locals("userId").(string)
 	
-	ref := database.FirebaseDB.NewRef(fmt.Sprintf("users/%s/calendar_events", userId))
+	// Create slice to store all events
+	events := []Event{}
 
-	println("in fetching events for user:", userId)
+	// 1. Fetch user-specific events
+	userRef := database.FirebaseDB.NewRef(fmt.Sprintf("users/%s/calendar_events", userId))
+	println("Fetching events for user:", userId)
 
-	// Map to store the fetched data
-	var eventsMap map[string]Event
+	// Map to store the user events
+	var userEventsMap map[string]Event
 
 	// Get data from Firebase Realtime Database
-	if err := ref.Get(ctx, &eventsMap); err != nil {
+	if err := userRef.Get(ctx, &userEventsMap); err != nil {
 		log.Println("Error fetching events for user", userId, ":", err)
-		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch events"})
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch user events"})
 	}
 
-	// Convert map to slice
-	events := []Event{}
-	for id, event := range eventsMap {
+	// Add user events to the events slice
+	for id, event := range userEventsMap {
+		event.ID = id
+		events = append(events, event)
+	}
+
+	// 2. Fetch global events
+	globalRef := database.FirebaseDB.NewRef("global_calendar_events")
+	println("Fetching global events")
+
+
+	// sample 
+	// {
+       
+    //     "title": "FOMC event ",
+    //     "start": "2025-04-09T23:37",
+    //     "end": "2025-04-10T23:37",
+    //     "extendedProps": {
+    //         "category": "investments",
+    //         "recurrence": "none"
+    //     }
+    // }
+	
+	// Map to store the global events
+	var globalEventsMap map[string]Event
+
+	// Get global events from Firebase Realtime Database
+	if err := globalRef.Get(ctx, &globalEventsMap); err != nil {
+		log.Println("Error fetching global events:", err)
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch global events"})
+	}
+
+	// Add global events to the events slice
+	for id, event := range globalEventsMap {
 		event.ID = id
 		events = append(events, event)
 	}
 
 	return c.JSON(events)
+}
+
+func CreateGlobalEvent(c *fiber.Ctx) error {
+	var event Event
+	if err := c.BodyParser(&event); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid request"})
+	}
+
+	// Push new event (Firebase will generate a unique ID)
+	ctx := context.Background()
+	// Reference the global events node in Realtime DB
+	ref := database.FirebaseDB.NewRef("global_calendar_events")
+
+	// Push new event (Firebase will generate a unique ID)
+	newRef, err := ref.Push(ctx, event)
+	if err != nil {
+		log.Println("Error creating global event:", err)
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to create global event"})
+	}
+
+	// Return success response
+	return c.JSON(fiber.Map{
+		"message": "Global event added successfully",
+		"id":      newRef.Key,
+	})
+
+
+
 }
 
 // CreateEvent - Adds an event to Firebase Realtime Database for a specific user
@@ -204,3 +266,5 @@ func FetchGoals(c *fiber.Ctx) error {
 	}
 	return c.JSON(goals)
 }
+
+
