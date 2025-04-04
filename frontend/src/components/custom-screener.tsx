@@ -1,11 +1,20 @@
 "use client"
 import React from "react"
-import { useEffect, useRef  } from "react"
+import { useEffect, useRef, useState } from "react"
 
 export function CustomScreener() {
   const container = useRef<HTMLDivElement>(null)
+  const [isInitialized, setIsInitialized] = useState(false)
 
   useEffect(() => {
+    // Prevent multiple initializations
+    if (isInitialized || !container.current) return
+
+    const widgetContainer = container.current.querySelector('.tradingview-widget-container__widget')
+    
+    // Check if widget is already initialized
+    if (widgetContainer && widgetContainer.children.length > 0) return
+    
     const script = document.createElement("script")
     script.src = "https://s3.tradingview.com/external-embedding/embed-widget-hotlists.js"
     script.type = "text/javascript"
@@ -71,16 +80,23 @@ export function CustomScreener() {
       ],
     })
 
+    // Set attribute to identify this script
+    script.setAttribute('data-widget-id', 'custom-screener')
+    
+    // Mark as initialized before appending to prevent any race conditions
+    setIsInitialized(true)
+    
     if (container.current) {
       container.current.appendChild(script)
     }
 
     return () => {
-      if (container.current && script.parentNode) {
+      if (script.parentNode) {
         script.parentNode.removeChild(script)
       }
+      setIsInitialized(false)
     }
-  }, [])
+  }, [isInitialized])
 
   return (
     <div className="tradingview-widget-container h-full" ref={container}>

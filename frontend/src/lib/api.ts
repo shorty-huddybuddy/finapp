@@ -52,6 +52,7 @@ export const fetchEvents = async (token?: string | null): Promise<EventInput[]> 
     const response = await fetch(`${API_URL}/events`, {
       headers: { 'Authorization': token ? `Bearer ${token}` : '' }
     })
+    console.log(response.json)
     if (!response.ok) throw new Error("Failed to fetch events")
     return await response.json()
   } catch (error) { 

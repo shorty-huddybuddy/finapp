@@ -9,7 +9,7 @@ interface PredictionChartProps {
   ticker: string;
 }
 
-const   PredictionChart: React.FC<PredictionChartProps> = ({ ticker }) => {
+const PredictionChart: React.FC<PredictionChartProps> = ({ ticker }) => {
   const chartRef = useRef<HTMLCanvasElement>(null); // Reference for the chart instance
   interface ChartData {
     linear_regression: { Date: string; Prediction: number }[];
@@ -24,7 +24,7 @@ const   PredictionChart: React.FC<PredictionChartProps> = ({ ticker }) => {
     const fetchData = async () => {
       try {
         const response = await axios.get(`http://127.0.0.1:8000/predict?ticker=${ticker}&number_of_days=10`);
-        // console.log(response)
+         console.log(response)
         setChartData(response.data); // Store the API response in state
       } catch (error) {
         console.error("Error fetching data:", error);

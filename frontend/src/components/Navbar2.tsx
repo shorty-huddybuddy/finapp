@@ -122,7 +122,7 @@ export function Navbar2() {
           >
             <LineChart className="h-7 w-7 text-blue-200" />
             <span className="text-2xl font-bold tracking-tight">
-              FinanceHub
+              FinAura
             </span>
           </motion.div>
 

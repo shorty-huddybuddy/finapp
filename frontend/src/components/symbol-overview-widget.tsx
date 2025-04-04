@@ -1,11 +1,19 @@
 "use client"
 import React from "react"
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 
 export function SymbolOverviewWidget() {
   const container = useRef<HTMLDivElement>(null)
+  const [initialized, setInitialized] = useState(false)
 
   useEffect(() => {
+    // Prevent duplicate initialization
+    if (initialized || !container.current) return
+
+    // Check if widget already exists in the container
+    const existingScript = container.current.querySelector('script[src*="embed-widget-symbol-overview.js"]')
+    if (existingScript) return
+
     const script = document.createElement("script")
     script.src = "https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js"
     script.type = "text/javascript"
@@ -38,19 +46,23 @@ export function SymbolOverviewWidget() {
       lineType: 0,
     })
 
-    if (container.current) {
-      container.current.appendChild(script)
-    }
+    container.current.appendChild(script)
+    setInitialized(true)
 
     return () => {
-      if (container.current && script.parentNode) {
-        script.parentNode.removeChild(script)
+      if (container.current) {
+        // More thorough cleanup
+        const scripts = container.current.querySelectorAll('script[src*="embed-widget-symbol-overview.js"]')
+        scripts.forEach(script => script.parentNode?.removeChild(script))
+        
+        // Reset initialized state
+        setInitialized(false)
       }
     }
-  }, [])
+  }, [initialized])
 
   return (
-    <div className="tradingview-widget-container h-[120px]" ref={container}>
+    <div className="tradingview-widget-container h-[120px] symbol-overview-instance" ref={container}>
       <div className="tradingview-widget-container__widget h-full"></div>
     </div>
   )
