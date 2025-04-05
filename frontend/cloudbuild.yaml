@@ -1,0 +1,39 @@
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_YWxlcnQtZG9kby0xMy5jbGVyay5hY2NvdW50cy5kZXYk'
+      - '--build-arg'
+      - 'CLERK_SECRET_KEY=sk_test_31oGp6Jm3FH0Wgv9WUMyLjdcWenRMw2xjAN0nsYzMd'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up'
+      - '--build-arg'
+      - 'VITE_GEMINI_API_KEY=AIzaSyD5A5-Zjv-_xVmon23WVAAQPZYcsV0iqCo'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_51Qrg2GAZ7JAmj0t9WVPDVvNX5tyH9viqKHsn4GNxieDcGFHWNSZcuOgsIAmuDtGNjTjLyWI2dndb8WxdKaiPc44i00mN0J8aCK'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_API_URL=https://finapp-backend-438117164914.us-central1.run.app/'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_ML_API_URL=https://finapp-recommender-438117164914.us-central1.run.app'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_MARKET_DATA_URL=https://api.marketdata.app/v1'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_MARKET_DATA_API_KEY=679542ee6b35c4.80378588'
+      - '-t'
+      - 'gcr.io/finaura-455907/finapp-frontend'
+      - '.'
+  
+  # Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/finaura-455907/finapp-frontend']
+
+# Store the image in Container Registry
+images:
+  - 'gcr.io/finaura-455907/finapp-frontend'
+
+# Set a longer timeout to ensure the build has enough time to complete
+timeout: '1800s'

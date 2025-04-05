@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { ResultItem } from "@/types/analyzer"
 
 import InvestmentForm from "../../components/InvestmentForm"
 import ResultDisplay from "../../components/ResultDisplay"
@@ -8,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Navbar2 } from "@/components/Navbar2"
 
 export default function App() {
-  const [result, setResult] = useState(null)
+  const [result, setResult] = useState<ResultItem[] | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
   return (
@@ -60,7 +61,7 @@ export default function App() {
                             <p className="mt-3 text-gray-600 text-center">Generating your investment plan...</p>
                           </div>
                         ) : (
-                          result && <ResultDisplay result={result} setResult={setResult} />
+                          result && <ResultDisplay result={result} setResult={(value: ResultItem[] | null) => setResult(value)} />
                         )}
                       </div>
                     </motion.div>
@@ -74,3 +75,4 @@ export default function App() {
     </div>
   )
 }
+

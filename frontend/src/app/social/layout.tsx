@@ -1,5 +1,4 @@
 "use client"
-import { Inter } from "next/font/google"
 import { Sidebar } from "@/components/sidebar_social"
 import { SearchHeader } from "@/components/search-header"
 import { RightSidebar } from "@/components/right-sidebar"
@@ -9,7 +8,6 @@ import type React from "react"
 import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { motion } from "framer-motion"
-const inter = Inter({ subsets: ["latin"] })
 
 export default function RootLayout({
   children,

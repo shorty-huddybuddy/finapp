@@ -6,7 +6,6 @@ import {
   MessageSquare, 
   TrendingUp, 
   Share2, 
-  ArrowUp,
   LineChart as ChartLineUp,
   Brain as BrainCog,
   Calendar as CalendarIcon,

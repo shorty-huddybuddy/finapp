@@ -72,12 +72,12 @@ export default function Dashboard() {
   }
 
   // User verification (optional)
-  const verifyUser = () => {
-    const secret = "5b0fqtqg35dpelgtesk24xny70aqds0j" // Your verification secret key
-    const userId = "user-id" // Replace with actual user ID (e.g., from authentication)
-    const hash = crypto.createHmac("sha256", secret).update(userId).digest("hex")
-    return hash
-  }
+  // const verifyUser = () => {
+  //   const secret = "5b0fqtqg35dpelgtesk24xny70aqds0j" // Your verification secret key
+  //   const userId = "user-id" // Replace with actual user ID (e.g., from authentication)
+  //   const hash = crypto.createHmac("sha256", secret).update(userId).digest("hex")
+  //   return hash
+  // }
 
   if (loading) {
     return <Loader/>

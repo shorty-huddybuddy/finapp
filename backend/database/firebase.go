@@ -30,7 +30,7 @@ var (
 )
 
 func InitFirebase() {
-	opt := option.WithCredentialsFile("api_key.json")
+	opt := option.WithCredentialsFile("/app/api_key.json")
 	app, err := firebase.NewApp(context.Background(), nil, opt)
 	if err != nil {
 		log.Fatalf("Error initializing Firebase app: %v", err)
