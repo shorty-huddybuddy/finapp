@@ -1,5 +1,5 @@
 "use client"
-
+import { type IconKey, getIconForKey } from "@/components/get-icon-for-key"
 import { useState } from "react"
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import FeatureCard from "./feature-card"
@@ -7,28 +7,19 @@ import FeatureCard from "./feature-card"
 interface Feature {
   title: string
   description: string
-  icon: string
+  icon: IconKey
   color: string
 }
 
 export default function FeatureSlider({ features }: { features: Feature[] }) {
   const [currentIndex, setCurrentIndex] = useState(0)
 
-  // Calculate the indices of features to display based on screen size
   const getVisibleIndices = () => {
-    // On small screens, show only 1 feature
-    if (typeof window !== 'undefined' && window.innerWidth < 640) {
+    if (typeof window !== "undefined" && window.innerWidth < 640) {
       return [currentIndex]
-    }
-    // On medium screens, show 2 features
-    else if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-      return [
-        currentIndex,
-        (currentIndex + 1) % features.length,
-      ]
-    }
-    // On large screens, show 3 features
-    else {
+    } else if (typeof window !== "undefined" && window.innerWidth < 1024) {
+      return [currentIndex, (currentIndex + 1) % features.length]
+    } else {
       return [
         currentIndex,
         (currentIndex + 1) % features.length,
@@ -52,7 +43,10 @@ export default function FeatureSlider({ features }: { features: Feature[] }) {
           {getVisibleIndices().map((index) => (
             <FeatureCard
               key={index}
-              feature={features[index]}
+              feature={{
+                ...features[index],
+                icon: getIconForKey(features[index].icon),
+              }}
               className="h-full"
             />
           ))}
@@ -78,4 +72,3 @@ export default function FeatureSlider({ features }: { features: Feature[] }) {
     </div>
   )
 }
-

@@ -8,15 +8,14 @@ import { fetchNotifications, fetchInsights, fetchMarketEvents, fetchRiskAlerts, 
 import { motion } from "framer-motion"
 import { useAuth } from "@clerk/nextjs"
 
-export default function Sidebar() {
-  const [notifications, setNotifications] = useState([])
-  const [insights, setInsights] = useState([])
-  const [marketEvents, setMarketEvents] = useState([])
-  const [riskAlerts, setRiskAlerts] = useState([])
-  const [goals, setGoals] = useState([])
-  const {getToken} = useAuth()
+export function Sidebar_for_calendar() {
+  const [notifications, setNotifications] = useState<string[]>([])
+  const [insights, setInsights] = useState<string[]>([])
+  const [marketEvents, setMarketEvents] = useState<string[]>([])
+  const [riskAlerts, setRiskAlerts] = useState<string[]>([])
+  const { getToken } = useAuth()
+
   useEffect(() => {
-   
     const loadSidebarData = async () => {
       const token = await getToken()
       setNotifications(await fetchNotifications(token))
@@ -32,33 +31,11 @@ export default function Sidebar() {
       <SidebarSection title="Notifications" items={notifications} />
       <SidebarSectionpy title="Market Events" items={marketEvents} />
       <SidebarSectionpy title="Risk Alerts" items={riskAlerts} isAlert />
-      {/* <Card>
-        <CardHeader>    
-          <CardTitle className="text-xl font-bold text-blue-800">Financial Goals</CardTitle>
-        </CardHeader>
-        <CardContent> 
-          {goals.map((goal, index) => (
-            <motion.div
-              key={index}
-              className="mb-4"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <div className="flex justify-between mb-1">
-                <span className="font-medium text-gray-700">{goal.name}</span>
-                <span className="font-bold text-blue-700">{goal.progress}%</span>
-              </div>
-              <Progress value={goal.progress} className="w-full h-2" indicatorColor="bg-blue-600" />
-            </motion.div>
-          ))}
-        </CardContent>
-      </Card> */}
     </div>
   )
 }
 
-function SidebarSectionpy({ title, items, isAlert = false }) {
+export function SidebarSectionpy({ title, items, isAlert = false }: any) {
   return (
     <Card>
       <CardHeader>
@@ -66,7 +43,7 @@ function SidebarSectionpy({ title, items, isAlert = false }) {
       </CardHeader>
       <CardContent>
         <ul className="space-y-2">
-          {items.map((item, index) => (
+          {items.map((item: any, index: any) => (
             <motion.li
               key={index}
               initial={{ opacity: 0, x: -20 }}
@@ -89,7 +66,7 @@ function SidebarSectionpy({ title, items, isAlert = false }) {
 }
 
 
-function SidebarSection({ title, items, isAlert = false }) {
+export function SidebarSection({ title, items, isAlert = false }: any) {
   return (
     <Card>
       <CardHeader>
@@ -97,7 +74,7 @@ function SidebarSection({ title, items, isAlert = false }) {
       </CardHeader>
       <CardContent>
         <ul className="space-y-2">
-          {items.map((item, index) => (
+          {items.map((item: any, index: any) => (
             <motion.li
               key={index}
               initial={{ opacity: 0, x: -20 }}

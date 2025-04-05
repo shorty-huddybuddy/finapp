@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   Card,
   CardContent,
@@ -33,9 +33,24 @@ import {
 } from "recharts";
 import { format, startOfMonth, parseISO, isValid, subMonths } from "date-fns";
 import { ArrowDown, ArrowUp, CreditCard, DollarSign, TrendingDown, TrendingUp, BarChart3 } from "lucide-react";
+import { Transaction } from "@/types/transaction";
+
+interface AnalyticsSummary {
+  income: number;
+  expenses: number;
+  balance: number;
+  savingsRate: number;
+}
 
 export default function Analytics() {
   const { transactions } = useTransactionStore();
+
+  const [summary, setSummary] = useState<AnalyticsSummary>({
+    income: 0,
+    expenses: 0,
+    balance: 0,
+    savingsRate: 0,
+  });
 
   // Format transactions data
   const processedTransactions = useMemo(() => {
@@ -107,6 +122,25 @@ export default function Analytics() {
   }, [processedTransactions]);
 
   // Calculate total income, expenses and balance
+  const calculateSummary = (transactions: Transaction[]) => {
+    const summary = transactions.reduce(
+      (acc, transaction) => ({
+        income: acc.income + (transaction.type === 'income' ? transaction.amount : 0),
+        expenses: acc.expenses + (transaction.type === 'expense' ? transaction.amount : 0),
+        balance: 0,
+        savingsRate: 0
+      }),
+      { income: 0, expenses: 0, balance: 0, savingsRate: 0 }
+    );
+    
+    summary.balance = summary.income - summary.expenses;
+    summary.savingsRate = summary.income > 0 
+      ? (summary.balance / summary.income * 100) 
+      : 0;
+
+    return summary;
+  };
+
   const financialSummary = useMemo(() => {
     const summary = processedTransactions.reduce(
       (acc, t) => {
@@ -117,7 +151,7 @@ export default function Analytics() {
         }
         return acc;
       },
-      { income: 0, expenses: 0 }
+      { income: 0, expenses: 0, balance: 0, savingsRate: 0 }
     );
     
     summary.balance = summary.income - summary.expenses;

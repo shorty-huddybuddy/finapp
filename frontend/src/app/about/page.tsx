@@ -1,8 +1,9 @@
 import type { Metadata } from "next"
 import FeatureSlider from "../../components/feature-slider"
 import ContributorSection from "../../components/contributor-section"
-import {Footer} from "../../components/Footer";
+import { Footer } from "../../components/Footer"
 import { Navbar2 } from "@/components/Navbar2"
+import { IconKey } from "@/components/get-icon-for-key"
 
 export const metadata: Metadata = {
   title: "About Finaura | AI-Powered Financial Assistant",
@@ -11,8 +12,7 @@ export const metadata: Metadata = {
 }
 
 export default function AboutPage() {
-  // Features data for the slider
-  const features = [
+  const features: { title: string; description: string; icon: IconKey; color: string }[] = [
     {
       title: "AI-Powered Portfolio Analysis",
       description:
@@ -57,7 +57,6 @@ export default function AboutPage() {
     },
   ]
 
-  // Contributors data with real names and GitHub usernames
   const contributors = [
     {
       name: "Divyansh Omar",
@@ -83,12 +82,14 @@ export default function AboutPage() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Navbar2/>
+      <Navbar2 />
       <main className="flex-grow bg-gradient-to-b from-blue-50 to-white">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">
           <section className="mb-12 sm:mb-16 md:mb-20">
             <div className="text-center mb-10 sm:mb-12 md:mb-16">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-3 sm:mb-4 text-blue-800">Finaura</h1>
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-3 sm:mb-4 text-blue-800">
+                Finaura
+              </h1>
               <p className="text-base sm:text-lg md:text-xl text-slate-700 max-w-3xl mx-auto px-4">
                 A GenAI-powered financial assistant aimed at improving investing decisions through AI-driven insights,
                 automation, and interactive features.
@@ -105,4 +106,3 @@ export default function AboutPage() {
     </div>
   )
 }
-

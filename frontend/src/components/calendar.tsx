@@ -5,7 +5,7 @@ import FullCalendar from "@fullcalendar/react"
 import dayGridPlugin from "@fullcalendar/daygrid"
 import timeGridPlugin from "@fullcalendar/timegrid"
 import interactionPlugin from "@fullcalendar/interaction"
-import type { EventInput, DateSelectArg, EventClickArg } from "@fullcalendar/core"
+import type { EventInput, DateSelectArg, EventClickArg, EventApi } from "@fullcalendar/core"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { PlusIcon, ChevronDownIcon } from "lucide-react"
@@ -13,6 +13,8 @@ import EventModal from "./EventModal"
 import { fetchEvents, createEvent, updateEvent, deleteEvent } from "../lib/api"
 import { motion } from "framer-motion"
 import { useAuth } from "@clerk/nextjs"
+
+import { toast } from "sonner"
 
 export default function Calendar() {
   const [events, setEvents] = useState<EventInput[]>([])
@@ -54,25 +56,37 @@ export default function Calendar() {
   setEvents(fetchedEvents);
   }, [getToken])
 
-  const handleEventUpdate = useCallback(async (event: EventInput) => {
-    if(event.extendedProps?.isGlobal){
-      return;
-    }
-
-    const token = await getToken()
-    const updatedEvent = await updateEvent(event,token)
-    setEvents((prev) => prev.map((e) => (e.id === updatedEvent.id ? updatedEvent : e)))
+  const handleEventUpdate = useCallback(async (updatedEvent: EventInput) => {
+    if (!calendarRef.current) return;
     
-    // Force calendar to refresh the updated event
-    if (calendarRef.current) {
-      const calendarApi = calendarRef.current.getApi()
-      const existingEvent = calendarApi.getEventById(updatedEvent.id as string)
-      if (existingEvent) {
-        existingEvent.setProp('title', updatedEvent.title)
-        existingEvent.setStart(updatedEvent.start)
-        existingEvent.setEnd(updatedEvent.end)
-        existingEvent.setExtendedProp('category', updatedEvent.extendedProps?.category)
-        existingEvent.setAllDay(!!updatedEvent.allDay)
+    const calendarApi = calendarRef.current.getApi();
+    const existingEvent = calendarApi.getEventById(updatedEvent.id as string);
+    
+    if (existingEvent) {
+      const originalEvent = existingEvent.toPlainObject(); // Store original event data
+      
+      existingEvent.setProp('title', updatedEvent.title);
+      
+      // Add null checks for start and end dates
+      if (updatedEvent.start) {
+        existingEvent.setStart(updatedEvent.start);
+      }
+      
+      if (updatedEvent.end) {
+        existingEvent.setEnd(updatedEvent.end);
+      }
+      
+      existingEvent.setExtendedProp('category', updatedEvent.extendedProps?.category);
+      existingEvent.setAllDay(!!updatedEvent.allDay);
+      
+      try {
+        await updateEvent(updatedEvent);
+        toast.success('Event updated successfully');
+      } catch (error) {
+        toast.error('Failed to update event');
+        // Revert changes on error
+        existingEvent.remove();
+        calendarApi.addEvent(originalEvent as EventInput);
       }
     }
   }, [])
