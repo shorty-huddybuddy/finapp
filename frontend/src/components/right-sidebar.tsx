@@ -13,6 +13,7 @@ import { useUser } from "@clerk/nextjs"
 import { Search } from "lucide-react"
 import { useUserPermissions, useSubscriptionStatus } from "@/lib/swr/usePermissions"
 import { Skeleton } from "@/components/ui/skeleton"
+import { API_URL } from '@/lib/config'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
@@ -53,7 +54,7 @@ export function RightSidebar() {
       setLoading(true)
       const token = await getToken()
       
-      const response = await fetch('http://localhost:8080/api/subscriptions/create', {
+      const response = await fetch(`${API_URL}/api/subscriptions/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,5 +1,6 @@
 import useSWR from 'swr';
 import { useAuth } from '@clerk/nextjs';
+import { API_URL } from '@/lib/config';
 
 // Define types
 interface LikeStatusResponse {
@@ -24,7 +25,7 @@ export function useLikeStatuses(postIds: string[]) {
       
       // Use the batch endpoint instead of individual requests
       const response = await fetch(
-        `http://localhost:8080/api/social/posts/batch/like-status`,
+        `${API_URL}/api/social/posts/batch/like-status`,
         {
           method: 'POST',
           headers: {

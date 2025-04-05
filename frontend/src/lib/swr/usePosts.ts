@@ -3,6 +3,7 @@ import { useAuth } from '@clerk/nextjs';
 import { useCallback, useEffect } from 'react';
 import { Post, PostsResponse } from '@/types/social';
 import { useSocialStore } from '@/hooks/store/social';
+import { API_URL } from '@/lib/config';
 
 const CACHE_KEY = 'posts-cache';
 const CACHE_EXPIRY = 2 * 60 * 1000; // 2 minutes
@@ -81,7 +82,7 @@ export function usePosts(pageSize = 10, skip = false) {
       
       const token = await getToken();
       
-      const url = new URL('http://localhost:8080/api/social/posts');
+      const url = new URL(`${API_URL}/api/social/posts`);
       if (cursor) url.searchParams.append('lastId', cursor);
       url.searchParams.append('limit', String(limit));
       

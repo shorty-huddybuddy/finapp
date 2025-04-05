@@ -172,6 +172,12 @@ func CreateSubscription(c *fiber.Ctx) error {
 		metadata["creatorId"] = req.CreatorID
 	}
 
+	// Get frontend URL from environment
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		frontendURL = "http://localhost:3000" // fallback default
+	}
+
 	// Create the Stripe checkout session with v81
 	params := &stripe.CheckoutSessionParams{
 		PaymentMethodTypes: []*string{
@@ -184,8 +190,8 @@ func CreateSubscription(c *fiber.Ctx) error {
 			},
 		},
 		Mode:              stripe.String(string(stripe.CheckoutSessionModeSubscription)),
-		SuccessURL:        stripe.String("http://localhost:3000/subscription/success?session_id={CHECKOUT_SESSION_ID}&type=" + req.Type),
-		CancelURL:         stripe.String("http://localhost:3000/subscription/cancel"),
+		SuccessURL:        stripe.String(fmt.Sprintf("%s/subscription/success?session_id={CHECKOUT_SESSION_ID}&type=%s", frontendURL, req.Type)),
+		CancelURL:         stripe.String(fmt.Sprintf("%s/subscription/cancel", frontendURL)),
 		ClientReferenceID: stripe.String(userID),
 		Metadata:          metadata, // Use Metadata directly instead of SubscriptionData in v81
 	}
@@ -416,4 +422,3 @@ func isIndexError(err error) bool {
 		strings.Contains(err.Error(), ".indexOn") ||
 		strings.Contains(err.Error(), "400"))
 }
-

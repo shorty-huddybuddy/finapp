@@ -1,4 +1,5 @@
 import { toast } from 'sonner';
+import { API_URL } from '@/lib/config';
 
 export const usePostReactions = (getToken: () => Promise<string | null>) => {
   const toggleReaction = async (
@@ -17,7 +18,7 @@ export const usePostReactions = (getToken: () => Promise<string | null>) => {
         return;
       }
 
-      const endpoint = `http://localhost:8080/api/social/posts/${postId}/${reactionType}`;
+      const endpoint = `${API_URL}/api/social/posts/${postId}/${reactionType}`;
       
       // Optimistically update UI based on current state and action
       let newLikes = currentLikes;
