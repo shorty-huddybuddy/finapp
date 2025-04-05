@@ -20,6 +20,7 @@ import { Post } from "@/types/social"
 import { useSocialStore } from "@/hooks/store/social" 
 import { useAuthStore } from "@/hooks/store/auth" 
 import { AnimatePresence, motion } from "framer-motion";
+import { API_URL } from '@/lib/config'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
@@ -161,7 +162,7 @@ export function PostFeed() {
         likes: isCurrentlyLiked ? currentLikes - 1 : currentLikes + 1 
       });
 
-      const response = await fetch(`http://localhost:8080/api/social/posts/${postId}/like`, {
+      const response = await fetch(`${API_URL}/api/social/posts/${postId}/like`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -205,7 +206,7 @@ export function PostFeed() {
       removePost(postId);
 
       // Then delete from backend
-      const response = await fetch(`http://localhost:8080/api/social/posts/${postId}`, {
+      const response = await fetch(`${API_URL}/api/social/posts/${postId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -256,7 +257,7 @@ export function PostFeed() {
         return;
       }
 
-      const response = await fetch('http://localhost:8080/api/subscriptions/create', {
+      const response = await fetch(`${API_URL}/api/subscriptions/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

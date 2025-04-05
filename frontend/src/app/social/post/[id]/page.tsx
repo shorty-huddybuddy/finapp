@@ -13,6 +13,7 @@ import { PostDetailHeader } from "@/components/post-detail-header"
 import Image from "next/image"
 import { ImagePreview } from "@/components/image-preview"
 import { useSocialStore } from "@/hooks/store/social"
+import { API_URL } from '@/lib/config'
 
 type Post = {
   id: string;
@@ -74,7 +75,7 @@ export default function PostDetailPage() {
           
           // Only fetch comments for existing post
           const token = await getToken();
-          const commentRes = await fetch(`http://localhost:8080/api/social/posts/${id}/comments`, {
+          const commentRes = await fetch(`${API_URL}/api/social/posts/${id}/comments`, {
             headers: { 'Authorization': token ? `Bearer ${token}` : '' }
           });
           
@@ -90,10 +91,10 @@ export default function PostDetailPage() {
         // If not in cache, verify post exists before fetching details
         const token = await getToken();
         const [postRes, commentRes] = await Promise.all([
-          fetch(`http://localhost:8080/api/social/posts/${id}`, {
+          fetch(`${API_URL}/api/social/posts/${id}`, {
             headers: { 'Authorization': token ? `Bearer ${token}` : '' }
           }),
-          fetch(`http://localhost:8080/api/social/posts/${id}/comments`, {
+          fetch(`${API_URL}/api/social/posts/${id}/comments`, {
             headers: { 'Authorization': token ? `Bearer ${token}` : '' }
           })
         ]);
@@ -148,7 +149,7 @@ export default function PostDetailPage() {
         likes: post.liked ? post.likes - 1 : post.likes + 1 
       })
 
-      const response = await fetch(`http://localhost:8080/api/social/posts/${post.id}/like`, {
+      const response = await fetch(`${API_URL}/api/social/posts/${post.id}/like`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -175,7 +176,7 @@ export default function PostDetailPage() {
 
     try {
       const token = await getToken()
-      const res = await fetch(`http://localhost:8080/api/social/posts/${id}/comments`, {
+      const res = await fetch(`${API_URL}/api/social/posts/${id}/comments`, {
         method: "POST",
         headers: {
           'Content-Type': 'application/json',

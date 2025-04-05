@@ -1,5 +1,6 @@
 import useSWR from 'swr';
 import { useAuth } from '@clerk/nextjs';
+import { API_URL } from '@/lib/config';
 
 // Define types for the permission data
 export interface UserPermissions {
@@ -57,7 +58,7 @@ export function useUserPermissions(skip = false) {
       if (!token) throw new Error('Not authenticated');
       
       console.log('Fetching permissions from API');
-      const response = await fetch('http://localhost:8080/api/users/permissions', {
+      const response = await fetch(`${API_URL}/api/users/permissions`, {
         headers: { Authorization: `Bearer ${token}` },
         cache: 'no-store' // Prevent browser caching
       });
@@ -107,7 +108,7 @@ export function useSubscriptionStatus(skip = false) {
       if (!token) throw new Error('Not authenticated');
       
       console.log('Fetching subscriptions from API');
-      const response = await fetch('http://localhost:8080/api/subscriptions/status', {
+      const response = await fetch(`${API_URL}/api/subscriptions/status`, {
         headers: { Authorization: `Bearer ${token}` },
         cache: 'no-store' // Prevent browser caching
       });

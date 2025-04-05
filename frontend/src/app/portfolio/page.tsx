@@ -25,6 +25,8 @@ import { debounce } from "lodash"
 import axios from "axios"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Chatbot } from "../../components/Chatbot" 
+import { API_URL, ML_API_URL } from '@/lib/config'
+
 type WatchlistItem = {
   user_id: string
   ticker: string
@@ -106,9 +108,9 @@ export default function Dashboard() {
         var response
        
        if(newType === 'stock'){ 
-       response = await fetch(`http://127.0.0.1:8080/api/search?symbol=${query}&type=stock`)
+       response = await fetch(`${API_URL}/api/search?symbol=${query}&type=stock`)
        } else {
-        response = await fetch(`http://127.0.0.1:8080/api/search?symbol=${query}&type=crypto`)
+        response = await fetch(`${API_URL}/api/search?symbol=${query}&type=crypto`)
        }
        
       const data = await response.json()
@@ -153,7 +155,7 @@ export default function Dashboard() {
   const fetchWatchlistData = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch(`http://127.0.0.1:8080/api/watchlist?user_id=${userId}`)
+      const response = await fetch(`${API_URL}/api/watchlist?user_id=${userId}`)
       if (!response.ok) throw new Error('Failed to fetch watchlist data')
       const data = await response.json()
       setWatchlistData({
@@ -182,7 +184,7 @@ export default function Dashboard() {
 
   const validateTicker = async (ticker: string, type: AssetType) => {
     try {
-      const response = await fetch(`http://127.0.0.1:8080/api/price?ticker=${ticker}&category=${type}`);
+      const response = await fetch(`${API_URL}/api/price?ticker=${ticker}&category=${type}`);
       const data = await response.json();
       
       if (data.price <= 0) {
@@ -212,7 +214,7 @@ export default function Dashboard() {
       return;
     }
     try {
-      const response = await fetch('http://127.0.0.1:8080/api/watchlist', {
+      const response = await fetch(`${API_URL}/api/watchlist`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -240,7 +242,7 @@ export default function Dashboard() {
   const updateWatchlistItem = async () => {
     if (!editingItem || !userId) return
     try {
-      const response = await fetch(`http://127.0.0.1:8080/api/watchlist?item_id=${editingItem.id}`, {
+      const response = await fetch(`${API_URL}/api/watchlist?item_id=${editingItem.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -268,7 +270,7 @@ export default function Dashboard() {
   const removeFromWatchlist = async (itemId: string) => {
     if (!userId) return
     try {
-      const response = await fetch(`http://127.0.0.1:8080/api/watchlist?user_id=${userId}&item_id=${itemId}`, {
+      const response = await fetch(`${API_URL}/api/watchlist?user_id=${userId}&item_id=${itemId}`, {
         method: 'DELETE',
       })
       if (!response.ok) throw new Error('Failed to remove item from watchlist')
@@ -309,18 +311,8 @@ export default function Dashboard() {
     setIsAnalyzing(true)
     try {
 
-      const response = await axios.post("http://localhost:8080/generate?type=analyzer",watchlistData)
+      const response = await axios.post(`${ML_API_URL}/generate?type=analyzer`,watchlistData)
 
-      // const response = await fetch('http://127.0.0.1:8080/generate?type=analyzer', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify(watchlistData),
-      // })
-      
-      
-      
       const rdata = await response.data
       const jsonString = rdata.response.replace(/```json\n|\n```/g, '');
 

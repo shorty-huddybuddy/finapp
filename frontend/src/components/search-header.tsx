@@ -14,6 +14,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Label } from "@/components/ui/label"
 import { useState } from "react"
 import { useExtendedUser } from "@/hooks/useExtendedUser"
+import { API_URL } from '@/lib/config'
 
 interface ErrorResponse {
   error: string;
@@ -69,7 +70,7 @@ export function SearchHeader() {
       };
 
       console.log("Sending post data:", postData); 
-      const response = await fetch('http://localhost:8080/api/social/posts', {
+      const response = await fetch(`${API_URL}/api/social/posts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

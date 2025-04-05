@@ -48,6 +48,18 @@ func main() {
 	}
 	clerk.SetKey(clerkKey)
 
+	// Get frontend URL from environment
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		frontendURL = "http://localhost:3000" // fallback default
+	}
+
+	// Get API port from environment
+	apiPort := os.Getenv("API_PORT")
+	if apiPort == "" {
+		apiPort = "8080" // fallback default
+	}
+
 	// Initialize Firebase
 	database.InitFirebase()
 	defer database.CloseFirebase()
@@ -55,9 +67,9 @@ func main() {
 	// Setup Fiber
 	app := fiber.New()
 
-	// CORS middleware
+	// CORS middleware with environment variable
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "http://localhost:3000",
+		AllowOrigins: frontendURL,
 		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
 		AllowMethods: "GET,POST,HEAD,PUT,DELETE,PATCH",
 	}))
@@ -65,8 +77,8 @@ func main() {
 	// Register routes
 	routes.RegisterRoutes(app)
 
-	log.Println("Server starting on :8080")
-	if err := app.Listen(":8080"); err != nil {
+	log.Printf("Server starting on :%s", apiPort)
+	if err := app.Listen(":" + apiPort); err != nil {
 		log.Fatal(err)
 	}
 }

@@ -1,5 +1,6 @@
 import { useUser, useAuth } from "@clerk/nextjs"
 import { useState, useEffect } from "react"
+import { API_URL } from '@/lib/config'
 
 interface UserPermissions {
   isPremium: boolean
@@ -33,7 +34,7 @@ export function useExtendedUser() {
       try {
         const token = await getToken()
         console.log(token);
-        const response = await fetch('http://localhost:8080/api/users/permissions', {
+        const response = await fetch(`${API_URL}/api/users/permissions`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -51,7 +52,7 @@ export function useExtendedUser() {
       if (!user) return
       try {
         const token = await getToken()
-        const response = await fetch('http://localhost:8080/api/subscriptions/status', {
+        const response = await fetch(`${API_URL}/api/subscriptions/status`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

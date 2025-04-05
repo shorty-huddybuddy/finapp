@@ -1,5 +1,7 @@
-const API_KEY = "679542ee6b35c4.80378588"
-const BASE_URL = "https://api.marketdata.app/v1"
+
+import { MARKET_DATA_API_KEY, MARKET_DATA_URL, API_URL as URL,ML_API_URL } from "./config"
+const API_KEY = MARKET_DATA_API_KEY
+const BASE_URL = MARKET_DATA_URL
 
 import type { EventInput } from "@fullcalendar/core"
 
@@ -41,8 +43,8 @@ export async function fetchStockChart(symbol: string, interval = "1d") {
 }
 
 //  calender part apis 
-const API_URL = "http://localhost:8080/api/calender"
-const PYTHON_URL = "http://localhost:8000"
+const PYTHON_URL = ML_API_URL
+const API_URL = `${URL}/api/calender`
 
 // All API functions now accept a token parameter which will be obtained from useAuth().getToken() in components
 

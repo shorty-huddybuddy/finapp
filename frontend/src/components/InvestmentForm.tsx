@@ -6,6 +6,7 @@ import { Slider } from "./ui/Slider_a"
 import { Select } from "./ui/Select_a"
 import { Input } from "./ui/Input_a"
 import { Button } from "./ui/Button_a"
+import { API_URL } from '@/lib/config'
 
 interface InvestmentFormProps {
   setResult: (result: any) => void;
@@ -47,7 +48,7 @@ export default function InvestmentForm({ setResult, setParentLoading }: Investme
     setParentLoading(true)
     
     try {
-      const response = await axios.post("http://localhost:8080/generate?type=investment_planner", {
+      const response = await axios.post(`${API_URL}/generate?type=investment_planner`, {
         balance: Number(data.balance),
         experience: data.experience,
         preference: "short-term",
