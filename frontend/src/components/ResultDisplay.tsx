@@ -10,10 +10,8 @@ interface ResultDisplayProps {
 }
 
 export default function ResultDisplay({ result, setResult }: ResultDisplayProps) {
-  // Fix: Convert Allocation number to string for display
-  const totalAllocation = result.reduce((sum, item) => 
-    sum + item.Allocation, 0
-  ).toFixed(2) + '%'
+  const total = result.reduce((sum, item) => sum + Number(item.Allocation), 0);
+  const totalAllocation = `${total.toFixed(2)}%`;
 
   const getRiskIcon = (risk: string) => {
     switch(risk.toLowerCase()) {

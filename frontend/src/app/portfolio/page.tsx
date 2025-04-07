@@ -284,7 +284,7 @@ export default function Dashboard() {
     if (!watchlistData) return
     setIsAnalyzing(true)
     try {
-      const response = await axios.post(`${ML_API_URL}/generate?type=analyzer`, watchlistData)
+      const response = await axios.post(`${API_URL}/generate?type=analyzer`, watchlistData)
 
       const rdata = await response.data
       const jsonString = rdata.response.replace(/```json\n|\n```/g, '');
