@@ -15,6 +15,7 @@ backend/tmp/
 # Virtual environment directories
 recommendations_model/venv/
 recommendations_model/_pycache_/
+recommendations_model/__pycache__/
 
 # Dependencies
 node_modules/
