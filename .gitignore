@@ -9,6 +9,8 @@ recommendations_model/api_key.json
 recommendations_model/_pycache_/*
 recommendations_model/_pycache_
 recommendations_model/pycache/
+backend/api_key.json
+backend/tmp/
 
 # Virtual environment directories
 recommendations_model/venv/

@@ -35,10 +35,7 @@ def reset_tf_session():
 
 cred_obj = credentials.Certificate('api_key.json')
 
-default_app = initialize_app(cred_obj, {
-    'databaseURL':"https://finapp-7794f-default-rtdb.firebaseio.com"
-    })
-
+default_app = initialize_app(cred_obj)
 
 class PredictionItem(BaseModel):
     Date: str
