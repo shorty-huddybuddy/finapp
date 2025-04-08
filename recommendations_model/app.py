@@ -17,6 +17,8 @@ from tensorflow.keras.layers import LSTM, Dense, GRU, Dropout, Conv1D, Flatten, 
 from tensorflow.keras.optimizers import Adam
 import tensorflow as tf
 from gnews import GNews
+import os
+from dotenv import load_dotenv
 
 # Set random seeds for reproducibility
 seed = 40
@@ -35,7 +37,18 @@ def reset_tf_session():
 
 cred_obj = credentials.Certificate('api_key.json')
 
-default_app = initialize_app(cred_obj)
+# Load environment variables from .env file
+load_dotenv()
+
+# Get database URL from environment variables
+database_url = os.getenv('DB_URL')
+if not database_url:
+    raise ValueError("Database URL not found in environment variables. Ensure DB_URL is set in your .env file.")
+print(database_url)
+default_app = initialize_app(cred_obj, {
+    'databaseURL': database_url
+})
+
 
 class PredictionItem(BaseModel):
     Date: str
