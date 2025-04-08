@@ -1,14 +1,14 @@
 import type { Metadata } from "next"
-import FeatureSlider from "../../components/feature-slider"
-import ContributorSection from "../../components/contributor-section"
-import { Footer } from "../../components/Footer"
 import { Navbar2 } from "@/components/Navbar2"
-import { IconKey } from "@/components/get-icon-for-key"
+import { Footer } from "../../components/Footer"
+import FeatureCard from "@/components/feature-card"
+import ContributorSection from "../../components/contributor-section"
+import { IconKey, getIconForKey } from "@/components/get-icon-for-key"
 
 export const metadata: Metadata = {
-  title: "About Finaura | AI-Powered Financial Assistant",
+  title: "About FinAaura | AI-Powered Financial Assistant",
   description:
-    "Learn about Finaura, the GenAI-powered financial assistant helping you make better investment decisions through AI-driven insights and portfolio analysis.",
+    "Learn about FinAura, the GenAI-powered financial assistant helping you make better investment decisions through AI-driven insights and portfolio analysis.",
 }
 
 export default function AboutPage() {
@@ -16,90 +16,91 @@ export default function AboutPage() {
     {
       title: "AI-Powered Portfolio Analysis",
       description:
-        "Get asset-specific recommendations with BUY, HOLD, SELL guidance backed by factual reasoning and risk exposure analysis.",
+        "Get asset-specific recommendations with BUY, HOLD, SELL guidance backed by factual reasoning.",
       icon: "line-chart",
       color: "blue",
     },
     {
       title: "Risk-Based Investment Suggestions",
       description:
-        "Receive personalized investment recommendations based on your risk profile, from high-risk options like crypto to low-risk investments.",
+        "Receive personalized investment recommendations based on your risk profile.",
       icon: "bar-chart",
       color: "blue",
     },
     {
       title: "Financial Literacy Content",
       description:
-        "Access blogs, videos, and interactive resources to improve your financial knowledge and make informed decisions.",
+        "Access blogs, videos, and interactive resources to improve your financial knowledge.",
       icon: "book-open",
       color: "blue",
     },
     {
       title: "Portfolio Management",
       description:
-        "Evaluate and score your portfolio with AI-driven insights and receive tailored investment recommendations.",
+        "Evaluate and score your portfolio with AI-driven insights.",
       icon: "briefcase",
       color: "blue",
     },
     {
       title: "Integrated Chatbot",
       description:
-        "Get answers to your financial and general queries through our intelligent assistant powered by Gemini API.",
+        "Get answers to your financial and general queries through our intelligent assistant.",
       icon: "message-circle",
       color: "blue",
     },
     {
       title: "Interactive Spreadsheets",
       description:
-        "Collaborate in real-time and leverage API integrations for financial data automation, similar to Rows.com.",
+        "Collaborate in real-time and leverage API integrations for financial data automation.",
       icon: "table",
       color: "blue",
     },
   ]
 
   const contributors = [
-    {
-      name: "Divyansh Omar",
-      github: "cauxtic",
-      avatar: "/p1.svg?height=200&width=200",
-    },
-    {
-      name: "Tejas Sharma",
-      github: "tej-as1",
-      avatar: "/p2.svg?height=200&width=200",
-    },
-    {
-      name: "Karan Deoli",
-      github: "karansenpai",
-      avatar: "/p3.svg?height=200&width=200",
-    },
-    {
-      name: "Aaditya Goyal",
-      github: "AAditya260305",
-      avatar: "/p4.svg?height=200&width=200",
-    },
+    { name: "Divyansh Omar", github: "cauxtic", avatar: "/p1.svg?height=200&width=200" },
+    { name: "Tejas Sharma", github: "tej-as1", avatar: "/p2.svg?height=200&width=200" },
+    { name: "Karan Deoli", github: "karansenpai", avatar: "/p3.svg?height=200&width=200" },
+    { name: "Aaditya Goyal", github: "AAditya260305", avatar: "/p4.svg?height=200&width=200" },
   ]
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-gray-100">
       <Navbar2 />
-      <main className="flex-grow bg-gradient-to-b from-blue-50 to-white">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">
-          <section className="mb-12 sm:mb-16 md:mb-20">
-            <div className="text-center mb-10 sm:mb-12 md:mb-16">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-3 sm:mb-4 text-blue-800">
-                Finaura
-              </h1>
-              <p className="text-base sm:text-lg md:text-xl text-slate-700 max-w-3xl mx-auto px-4">
-                A GenAI-powered financial assistant aimed at improving investing decisions through AI-driven insights,
-                automation, and interactive features.
-              </p>
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 py-20">
+        <div className="container mx-auto px-4 text-center">
+          <h1 className="text-5xl font-extrabold text-white mb-4 animate-fadeInDown">
+            FinAura
+          </h1>
+          <p className="text-xl text-indigo-200 max-w-3xl mx-auto animate-fadeInUp">
+            A GenAI-powered financial assistant that elevates your investing with AI-driven insights, 
+            automation, and interactive tools.
+          </p>
+        </div>
+      </div>
+      {/* Main Content */}
+      <main className="flex-grow -mt-10 bg-gray-100 rounded-t-3xl shadow-lg">
+        <div className="container mx-auto px-4 py-16">
+          <section className="mb-16">
+            <h2 className="text-3xl font-bold text-gray-800 text-center mb-8">
+              Our Features
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {features.map((feature, idx) => (
+                <FeatureCard
+                  key={idx}
+                  feature={{
+                    ...feature,
+                    icon: getIconForKey(feature.icon),
+                  }}
+                />
+              ))}
             </div>
-
-            <FeatureSlider features={features} />
           </section>
-
-          <ContributorSection contributors={contributors} />
+          <section className="mt-16">
+            <ContributorSection contributors={contributors} />
+          </section>
         </div>
       </main>
       <Footer />

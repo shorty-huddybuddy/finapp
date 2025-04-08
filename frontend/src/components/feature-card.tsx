@@ -1,42 +1,34 @@
-import { type IconKey, getIconForKey } from "./get-icon-for-key"
+import React from "react"
+import { type IconKey } from "@/components/get-icon-for-key"
 
-import { LucideIcon } from "lucide-react"
+interface Feature {
+  title: string
+  description: string
+  // We expect icon to be a component that accepts a className prop
+  icon: React.ComponentType<{ className?: string }>
+  color: string
+}
 
 interface FeatureCardProps {
-  feature: {
-    title: string
-    description: string
-    icon: LucideIcon // Update type here
-    color: string
-  }
+  feature: Feature
   className?: string
 }
 
-export default function FeatureCard({ feature, className }: FeatureCardProps) {
-  const { title, description, icon: Icon, color } = feature
-
+export default function FeatureCard({ feature, className = "" }: FeatureCardProps) {
+  const IconComponent = feature.icon
   return (
-    <div className={`p-4 rounded-lg shadow-md ${className}`} style={{ backgroundColor: color }}>
-      <Icon className="h-6 w-6 mb-2" />
-      <h3 className="text-lg font-bold">{title}</h3>
-      <p className="text-sm">{description}</p>
+    <div
+      className={`bg-purple-50 rounded-2xl p-6 shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 ${className}`}
+    >
+      <div className="flex justify-center mb-4">
+      <div className="p-4 rounded-full bg-white shadow-md">
+        {IconComponent && <IconComponent className="h-10 w-10 text-purple-700" />}
+      </div>
+      </div>
+      <h3 className="text-xl font-bold text-gray-900 text-center mb-3">
+      {feature.title}
+      </h3>
+      <p className="text-gray-700 text-center">{feature.description}</p>
     </div>
   )
 }
-// export default function FeatureCard({ feature, className = "" }: FeatureCardProps) {
-//   const Icon = getIconForKey(feature.icon)
-
-//   return (
-//     <div 
-//       className={`bg-white rounded-xl p-5 sm:p-6 shadow-sm border border-gray-100 transition-all hover:shadow-md hover:scale-[1.01] ${className}`}
-//     >
-//       <div className="flex items-center space-x-3 mb-3">
-//         <div className={`p-2 sm:p-3 rounded-lg bg-${feature.color}-100`}>
-//           <Icon className={`h-5 w-5 sm:h-6 sm:w-6 text-${feature.color}-600`} />
-//         </div>
-//         <h3 className="text-lg sm:text-xl font-semibold text-gray-900">{feature.title}</h3>
-//       </div>
-//       <p className="text-sm sm:text-base text-gray-600">{feature.description}</p>
-//     </div>
-//   )
-// }
