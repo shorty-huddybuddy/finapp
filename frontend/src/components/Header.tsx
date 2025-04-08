@@ -23,9 +23,14 @@ export function Header (){
               literacy through interactive learning.
             </p>
             <div className="flex justify-center">
-              <button className="flex items-center border-2 border-white text-white px-8 py-3 rounded-full font-semibold hover:bg-white hover:text-blue-700 transition-colors">
+              <a 
+                href="https://www.youtube.com/watch?v=E2v8UEyJjDU"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center border-2 border-white text-white px-8 py-3 rounded-full font-semibold no-underline hover:bg-white/10 transition-colors"
+              >
                 Watch Demo <ArrowRight className="ml-2 h-4 w-4" />
-              </button>
+              </a>
             </div>
           </div>
         </div>

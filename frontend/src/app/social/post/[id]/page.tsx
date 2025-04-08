@@ -10,26 +10,9 @@ import { Spinner } from "@/components/ui/spinner"
 import { toast } from "sonner"
 import { useAuth, useUser } from "@clerk/nextjs"
 import { PostDetailHeader } from "@/components/post-detail-header"
-import Image from "next/image"
 import { ImagePreview } from "@/components/image-preview"
 import { useSocialStore } from "@/hooks/store/social"
 import { API_URL } from '@/lib/config'
-
-type Post = {
-  id: string;
-  author: {
-    name: string;
-    handle: string;
-    avatar: string;
-  };
-  content: string;
-  image?: string;
-  likes: number;
-  comments: number;
-  shares: number;
-  timestamp: string;
-  liked: boolean;
-}
 
 type Comment = {
   id: string;
@@ -51,10 +34,8 @@ export default function PostDetailPage() {
   // Get post from store and store functions
   const { 
     currentPost: post,
-    posts, // Get all posts from store
     setCurrentPost, 
     updatePost,
-    error,
     setError
   } = useSocialStore();
 
@@ -217,12 +198,12 @@ export default function PostDetailPage() {
     )
   }
 
-  if (error || !post) {
+  if (!post) {
     return (
       <>
         <PostDetailHeader />
         <div className="p-8 text-center text-red-500">
-          {error?.message || 'Post not found'}
+          Post not found
         </div>
       </>
     )

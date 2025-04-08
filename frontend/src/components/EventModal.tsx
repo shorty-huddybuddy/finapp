@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { EventInput } from "@fullcalendar/core"
 import { motion } from "framer-motion"
+import dayjs from "dayjs"
 
 interface EventModalProps {
   isOpen: boolean
@@ -36,8 +37,34 @@ export default function EventModal({
   useEffect(() => {
     if (event) {
       setTitle(event.title || "")
-      setStart(event.start ? new Date(event.start).toISOString().slice(0, 16) : "")
-      setEnd(event.end ? new Date(event.end).toISOString().slice(0, 16) : "")
+      
+      // Fix date parsing
+      if (event.start) {
+        const startDate = typeof event.start === 'string' || event.start instanceof Date
+          ? new Date(event.start)
+          : null;
+        if (startDate) {
+          setStart(dayjs(startDate).format("YYYY-MM-DDTHH:mm"));
+        } else {
+          setStart("");
+        }
+      } else {
+        setStart("")
+      }
+
+      if (event.end) {
+        const endDate = typeof event.end === 'string' || event.end instanceof Date
+          ? new Date(event.end)
+          : null;
+        if (endDate) {
+          setEnd(dayjs(endDate).format("YYYY-MM-DDTHH:mm"));
+        } else {
+          setEnd("");
+        }
+      } else {
+        setEnd("")
+      }
+
       setCategory(event.extendedProps?.category || "")
       setRecurrence(event.extendedProps?.recurrence || "")
     } else {
@@ -51,11 +78,14 @@ export default function EventModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    const startDate = start ? new Date(start) : new Date()
+    const endDate = end ? new Date(end) : new Date()
+
     const eventData: EventInput = {
       id: event?.id || Date.now().toString(),
-      title,  
-      start,
-      end,
+      title,
+      start: startDate,
+      end: endDate,
       extendedProps: {
         category,
         recurrence,
@@ -163,7 +193,7 @@ export default function EventModal({
           </motion.div>
         </form>
       </DialogContent>
-    </Dialog> 
+    </Dialog>
   )
 }
 

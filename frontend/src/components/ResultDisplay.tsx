@@ -1,14 +1,19 @@
 import { motion } from "framer-motion"
 import { useState } from "react"
 import { Button } from "./ui/Button_a"
-import { ChartPie, Wallet, TrendUp, AlertTriangle } from "lucide-react"
+import { ChartPie, Wallet, AlertTriangle } from "lucide-react"
+import { ResultItem } from "@/types/analyzer"
 
-export default function ResultDisplay({ result, setResult }) {
-  const totalAllocation = result.reduce((sum, item) => 
-    sum + parseFloat(item["Allocation"].replace('%', '')), 0
-  ).toFixed(2)
+interface ResultDisplayProps {
+  result: ResultItem[];
+  setResult: (value: ResultItem[] | null) => void;
+}
 
-  const getRiskIcon = (risk) => {
+export default function ResultDisplay({ result, setResult }: ResultDisplayProps) {
+  const total = result.reduce((sum, item) => sum + Number(item.Allocation), 0);
+  const totalAllocation = `${total.toFixed(2)}%`;
+
+  const getRiskIcon = (risk: string) => {
     switch(risk.toLowerCase()) {
       case 'very low':
       case 'low': return '🟢'
@@ -27,7 +32,7 @@ export default function ResultDisplay({ result, setResult }) {
     <div className="flex flex-col">
       <div className="text-center space-y-4 mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Investment Portfolio</h2>
-        <p className="text-lg text-gray-600">Total Allocation: {totalAllocation}%</p>
+        <p className="text-lg text-gray-600">Total Allocation: {totalAllocation}</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -63,12 +68,12 @@ export default function ResultDisplay({ result, setResult }) {
                       Allocation
                     </span>
                     <span className="text-xs font-semibold text-gray-600">
-                      {item["Allocation"]}
+                      {item.Allocation}%
                     </span>
                   </div>
                   <div className="overflow-hidden h-2 text-xs flex rounded bg-gray-200">
                     <div
-                      style={{ width: `${parseFloat(item["Allocation"])}%` }}
+                      style={{ width: `${item.Allocation}%` }}
                       className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-500"
                     ></div>
                   </div>
@@ -94,12 +99,12 @@ export default function ResultDisplay({ result, setResult }) {
       {totalPages > 1 && (
         <div className="mt-4 flex justify-center gap-2">
           {pageIndex > 0 && (
-            <Button variant="outline" onClick={() => setPageIndex(pageIndex - 1)}>
+            <Button  onClick={() => setPageIndex(pageIndex - 1)}>
               Previous
             </Button>
           )}
           {pageIndex < totalPages - 1 && (
-            <Button variant="outline" onClick={() => setPageIndex(pageIndex + 1)}>
+            <Button onClick={() => setPageIndex(pageIndex + 1)}>
               Next
             </Button>
           )}
@@ -109,7 +114,6 @@ export default function ResultDisplay({ result, setResult }) {
       <div className="mt-6 text-center">
         <Button 
           onClick={() => setResult(null)}
-          variant="outline"
           className="hover:bg-gray-100"
         >
           Edit Preferences

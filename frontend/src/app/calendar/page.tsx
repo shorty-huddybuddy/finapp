@@ -1,11 +1,10 @@
 "use client"
 
 import Calendar from "../../components/calendar";
-import Sidebar from "../../components/Sidebar_for_calendar";
+import { Sidebar_for_calendar } from "../../components/Sidebar_for_calendar";
 import { Navbar2 } from "../../components/Navbar2";
-import { Footer } from "../../components/Footer";
 
-export default function Home() {
+export default function CalendarPage() {
   return (
     <div>
       <Navbar2/>
@@ -14,10 +13,9 @@ export default function Home() {
           <Calendar />
         </div>
         <div className="w-96 bg-white shadow-lg">
-          <Sidebar />
+          <Sidebar_for_calendar />
         </div>
       </div>
-      {/* <Footer /> */}
     </div>
   );
 }

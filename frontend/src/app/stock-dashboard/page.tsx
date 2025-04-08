@@ -101,18 +101,10 @@ import { StockSearch } from "../../components/stock-search";
 import { Navbar2 } from "../../components/Navbar2";
 import { Footer } from "../../components/Footer";
 import { Chatbot } from "../../components/Chatbot"; // New chatbot component
-import crypto from "crypto";
 
 export default function Dashboard() {
   const [selectedSymbol, setSelectedSymbol] = useState("AAPL");
 
-  // Example user authentication (if needed)
-  const current_user = { id: "user-uuid-here" }; // Replace with actual user ID
-  const secret = "h0evxrcvs1g8dynoburr3957l39arwsy"; // Your verification secret key
-  const userId = current_user.id;
-  const hash = crypto.createHmac("sha256", secret).update(userId).digest("hex");
-
-  // You can now use `hash` and `userId` to authenticate the user with the chatbot service
 
   return (
     <div className="min-h-screen bg-background">

@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
-import { Chart } from "chart.js/auto";
-import React from "react"
-
+import { Chart, ChartConfiguration } from "chart.js/auto";
+import React from "react";
+import { ML_API_URL as baseUrl } from "@/lib/config";
 interface PredictionChartProps {
   ticker: string;
 }
@@ -18,8 +18,12 @@ interface ApiResponse {
   ensemble_model: EnsembleModelData[];
 }
 
+interface ChartRef extends HTMLCanvasElement {
+  chart?: Chart;
+}
+
 const PredictionChart: React.FC<PredictionChartProps> = ({ ticker }) => {
-  const chartRef = useRef<HTMLCanvasElement>(null);
+  const chartRef = useRef<ChartRef>(null);
   const [chartData, setChartData] = useState<ApiResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -29,8 +33,8 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ ticker }) => {
       try {
         setIsLoading(true);
         setChartData(null);
-        
-        const response = await axios.get(`http://127.0.0.1:8000/predict?ticker=${ticker}&number_of_days=10`);
+
+        const response = await axios.get(`${baseUrl}/predict?ticker=${ticker}&number_of_days=10`);
         console.log(response);
         setChartData(response.data);
         setIsLoading(false);
@@ -45,22 +49,25 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ ticker }) => {
 
   // Render the chart when chartData is available
   useEffect(() => {
-    if (chartData && chartRef.current) {
-      const ctx = chartRef.current.getContext("2d");
+    if (!chartRef.current) return;
 
+    // Destroy the previous chart instance if it exists
+    if (chartRef.current.chart) {
+      chartRef.current.chart.destroy();
+    }
+
+    const ctx = chartRef.current.getContext("2d");
+    if (!ctx) return;
+
+    if (chartData) {
       // Extract data from the API response
-      const dates = chartData.ensemble_model.map(entry => 
+      const dates = chartData.ensemble_model.map((entry) =>
         entry.Date.split(" ")[0]
       );
-      
-      const predictions = chartData.ensemble_model.map(entry => 
+
+      const predictions = chartData.ensemble_model.map((entry) =>
         parseFloat(entry.Prediction)
       );
-
-      // Destroy the previous chart instance if it exists
-      if (chartRef.current.chart) {
-        chartRef.current.chart.destroy();
-      }
 
       // Create a new chart instance
       chartRef.current.chart = new Chart(ctx, {
@@ -76,7 +83,7 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ ticker }) => {
               borderWidth: 2,
               fill: true,
               tension: 0.1,
-            }
+            },
           ],
         },
         options: {
@@ -103,20 +110,27 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ ticker }) => {
               text: `${ticker} Stock Price Prediction`,
               font: {
                 size: 16,
-                weight: 'bold'
-              }
+                weight: "bold",
+              },
             },
             tooltip: {
               callbacks: {
-                label: function(context) {
+                label: function (context) {
                   return `Price: $${context.parsed.y.toFixed(2)}`;
-                }
-              }
-            }
-          }
+                },
+              },
+            },
+          },
         },
-      });
+      } as ChartConfiguration);
     }
+
+    // Cleanup on unmount
+    return () => {
+      if (chartRef.current?.chart) {
+        chartRef.current.chart.destroy();
+      }
+    };
   }, [chartData, ticker]);
 
   if (isLoading) {

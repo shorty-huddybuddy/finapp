@@ -7,9 +7,10 @@ import { Select } from "./ui/Select_a"
 import { Input } from "./ui/Input_a"
 import { Button } from "./ui/Button_a"
 import { API_URL } from '@/lib/config'
+import { ResultItem } from "@/types/analyzer"
 
 interface InvestmentFormProps {
-  setResult: (result: any) => void;
+  setResult: (result: ResultItem[] | null) => void;
   setParentLoading: (loading: boolean) => void;
 }
 

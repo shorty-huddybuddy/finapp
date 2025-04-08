@@ -47,7 +47,7 @@ export function SubscriptionButton({ creatorId, creatorName }: SubscriptionButto
 
   return (
     <>
-      <Button onClick={() => setIsOpen(true)} variant="premium">
+      <Button onClick={() => setIsOpen(true)} >
         Subscribe
       </Button>
 
