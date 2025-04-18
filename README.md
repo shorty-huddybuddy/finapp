@@ -6,7 +6,7 @@ FinApp is a comprehensive financial application that combines investment trackin
 
 ## Project Structure
 
-finapp/
+/finapp/
 ├── frontend/                   # Next.js frontend application
 │   ├── src/
 │   │   ├── app/                # Next.js app router routes
