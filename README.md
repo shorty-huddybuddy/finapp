@@ -5,6 +5,7 @@
 FinApp is a comprehensive financial application that combines investment tracking, educational resources, and market data analytics to help users make informed financial decisions.
 
 ## Project Structure
+
 finapp/
 ├── frontend/                   # Next.js frontend application
 │   ├── src/
@@ -32,8 +33,6 @@ finapp/
     ├── routes/                 # API route handlers
     │   └── ...
     └── main.go                 # Main application entry point
-
-
 
 ## Features
 
