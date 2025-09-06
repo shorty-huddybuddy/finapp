@@ -1,8 +1,75 @@
-# FinApp Project - README
+# 📊 Finaura – GenAI-Powered Financial Assistant
 
-## Overview
+Finaura is an AI-powered financial assistant that simplifies investment planning, portfolio management, and financial education. It empowers users with real-time insights, personalized suggestions, and smart financial tools — all in one seamless platform.
 
-FinApp is a comprehensive financial application that combines investment tracking, educational resources, and market data analytics to help users make informed financial decisions.
+---
+
+## 🚩 Problem Statement
+
+In today’s dynamic financial landscape, individuals often face:
+- Information overload
+- Lack of trustworthy investment advice
+- Low financial literacy
+- Difficulty managing personal finances
+
+**Finaura** aims to bridge this gap with automation, education, and GenAI.
+
+---
+
+## 🌟 Key Features
+
+### 🧠 AI-Powered Insights
+- **Portfolio Evaluation** – Get BUY/HOLD/SELL actions
+- **Risk Profiling** – Classify users as Low, Medium, or High risk
+- **Smart Recommendations** – Tailored investment options
+- **Market Trends** – AI-curated financial news and analysis
+
+### 💬 TradeMate Chatbot
+- Get instant answers to financial questions
+- Investment suggestions and general help via GenAI
+
+### 🎓 Financial Education Hub
+- Blogs, videos, and micro-courses for every level
+
+### 📅 Financial Calendar
+- Track EMIs, tax deadlines, and investment reminders
+
+### 📈 Market Monitoring
+- Real-time asset tracking, personalized watchlists
+
+### 🤝 Social Trading
+- Follow top traders
+- Learn strategies from experienced investors
+
+### 💸 Pay-to-Earn Model
+- Earn rewards for using features, completing tasks, and referring users
+
+---
+
+## 🧰 Tech Stack
+
+| Layer        | Technology      |
+|--------------|-----------------|
+| Frontend     | Next.js         |
+| Backend      | Go (Golang) /Python    |
+| Database     | Firebase        |
+| AI/LLM       | Gemini API/Models |
+
+---
+
+## 🚀 Business Model
+
+- **Freemium**: Core features available for free
+- **Premium**: Advanced analytics, premium social trading
+- **Pay-to-Earn**: Incentives for education, referrals, and engagement
+
+---
+
+## 📽️ Demo
+
+Watch the 3-minute product demo: https://www.youtube.com/watch?v=E2v8UEyJjDU
+
+---
 
 ## Project Structure
 ```
@@ -34,27 +101,6 @@ FinApp is a comprehensive financial application that combines investment trackin
     │   └── ...
     └── main.go                 # Main application entry point
 ```
-## Features
-
-- **Stock Dashboard**: Real-time market data and stock tracking
-- **Financial Analytics**: Visualize spending patterns and savings rate
-- **Education Center**: Comprehensive financial literacy resources
-- **Market Overview**: Live market indicators and trends
-
-## Technology Stack
-
-- **Frontend**:
-    
-    - Next.js (React framework)
-    - TypeScript
-    - TradingView widgets for market data visualization
-    - Recharts for data visualization
-- **Backend**:
-    
-    - Go (Golang)
-    - Fiber web framework
-    - Firebase for database
-    - Stripe for payment processing
 
 
 
@@ -69,37 +115,55 @@ The application uses various environment variables for API keys and service conf
 - `CLERK_SECRET_KEY`: Clerk authentication key
 
 
-## Getting Started
 
-1.**Clone the repository**
+
+## 📌 Getting Started (for Developers)
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/Karansenpai/finapp
 ```
-git clone <repository-url>
 
-cd finapp
+# 2. Navigate to the project
+```bash
+cd finaura
 ```
 
-2.**Frontend setup**
+# 3. Set up environment variables
 
-```
-cd frontend
+# In Frontend
+    - Clerk_secret_key
+# In Backend
+    - api_key.json (Firebase key)
+    - .env ( Stripe key , Clerk key)
+    - Gemini Api key
+
+
+# 4. Install frontend dependencies
 npm install
+
+# 5. Run the frontend
 npm run dev
-```
 
-Open http://localhost:3000 to view the application.
-
-3.**Backend setup**
-
-```
+# 6. Start the backend (Go)
+```bash
 cd backend
-go mod download
+go mod tidy
 go run main.go
 ```
+#7. Start the Python Server
+```bash
+pip install -r requrements.txt
+uvicorn app:app --reload
+```
 
-Backend will start on the configured port (default: 8080).
+UI ScreenShots
 
+![image](https://github.com/user-attachments/assets/077bc3b0-5ed3-4098-941d-7caefcbb78c9)
+![image](https://github.com/user-attachments/assets/cb36c013-13df-457e-ae5c-ed703754c4c8)
+![image](https://github.com/user-attachments/assets/1d8194ab-d1b4-47df-8fec-672da6a77159)
+![image](https://github.com/user-attachments/assets/89796cc6-d2ab-47de-9002-c487835f84df)
+![image](https://github.com/user-attachments/assets/0511be0e-8f8f-4c7c-88d0-71404e4f29de)
+![image](https://github.com/user-attachments/assets/262c94f4-3749-487c-b51c-01a670d71f81)
+![image](https://github.com/user-attachments/assets/91b19b71-de09-42bc-b063-bd83a867d151)
 
-## Deployment
-
-- Frontend is configured for deployment using Google Cloud Build
-- Backend can be deployed to Google Cloud Run or similar container services
