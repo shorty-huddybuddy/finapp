@@ -23,13 +23,15 @@ func InitStripe() error {
 		"creator-vip":     os.Getenv("CREATOR_VIP_PRICE_ID"),
 	}
 
-	// Validate that required price IDs are present
-	requiredPrices := []string{"premium-monthly", "premium-yearly"}
-	for _, tier := range requiredPrices {
-		if StripePriceConfig[tier] == "" {
-			return fmt.Errorf("missing required price ID for tier: %s", tier)
+	// Validate that required price IDs are present (skip in dev mode)
+	if os.Getenv("APP_ENV") != "development" {
+		requiredPrices := []string{"premium-monthly", "premium-yearly"}
+		for _, tier := range requiredPrices {
+			if StripePriceConfig[tier] == "" {
+				return fmt.Errorf("missing required price ID for tier: %s", tier)
+			}
+			log.Printf("Loaded price ID for %s: %s", tier, StripePriceConfig[tier])
 		}
-		log.Printf("Loaded price ID for %s: %s", tier, StripePriceConfig[tier])
 	}
 
 	// Debug: Print all price IDs at startup
@@ -64,6 +66,12 @@ func InitStripe() error {
 
 // ValidateAPIKey checks if the Stripe API key is valid
 func ValidateAPIKey() error {
+	// Skip validation in development mode to allow server startup without Stripe products
+	if os.Getenv("APP_ENV") == "development" {
+		log.Println("⚠️  Skipping Stripe API validation in development mode")
+		return nil
+	}
+
 	// Make a simple API call to verify the key
 	params := &stripe.PriceListParams{}
 	i := price.List(params)

@@ -58,10 +58,7 @@ export default function AboutPage() {
   ]
 
   const contributors = [
-    { name: "Divyansh Omar", github: "cauxtic", avatar: "/p1.svg?height=200&width=200" },
-    { name: "Tejas Sharma", github: "tej-as1", avatar: "/p2.svg?height=200&width=200" },
-    { name: "Karan Deoli", github: "karansenpai", avatar: "/p3.svg?height=200&width=200" },
-    { name: "Aaditya Goyal", github: "AAditya260305", avatar: "/p4.svg?height=200&width=200" },
+    { name: "Dinesh", github: "shorty-huddybuddy", avatar: "/p1.svg?height=200&width=200" },
   ]
 
   return (

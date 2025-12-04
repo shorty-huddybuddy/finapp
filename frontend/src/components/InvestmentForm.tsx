@@ -58,12 +58,24 @@ export default function InvestmentForm({ setResult, setParentLoading }: Investme
         minimum_freezing_period: Number(data.freezingPeriod),
       })
       const rdata = await response.data
-      const jsonString = rdata.response.replace(/```json\n|\n```/g, '')
-
-      const parsedData = JSON.parse(jsonString)
+      let responseText = rdata.response
+      
+      // Remove markdown code blocks if present
+      responseText = responseText.replace(/```json\n?|\n?```/g, '').trim()
+      
+      // Try to extract JSON array from text if it's embedded in a response
+      const jsonMatch = responseText.match(/\[\s*\{[\s\S]*\}\s*\]/)
+      if (jsonMatch) {
+        responseText = jsonMatch[0]
+      }
+      
+      // Parse the JSON
+      const parsedData = JSON.parse(responseText)
       setResult(parsedData)
     } catch (error) {
       console.error("Error parsing response:", error)
+      // Show user-friendly error
+      alert("Unable to parse investment recommendations. Please try again.")
     } finally {
       setIsLoading(false)
       setParentLoading(false)

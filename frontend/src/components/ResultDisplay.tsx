@@ -10,14 +10,20 @@ interface ResultDisplayProps {
 }
 
 export default function ResultDisplay({ result, setResult }: ResultDisplayProps) {
-  const total = result.reduce((sum, item) => sum + Number(item.Allocation), 0);
+  const total = result.reduce((sum, item) => {
+    const allocation = item.allocation || item.Allocation || '0';
+    return sum + Number(allocation.toString().replace('%', ''));
+  }, 0);
   const totalAllocation = `${total.toFixed(2)}%`;
 
-  const getRiskIcon = (risk: string) => {
+  const getRiskIcon = (risk?: string) => {
+    if (!risk) return '⚪';
     switch(risk.toLowerCase()) {
       case 'very low':
       case 'low': return '🟢'
+      case 'medium':
       case 'moderate': return '🟡'
+      case 'high':
       default: return '🔴'
     }
   }
@@ -37,10 +43,11 @@ export default function ResultDisplay({ result, setResult }: ResultDisplayProps)
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {visibleCards.map((item, index) => {
+          const risk = (item.risk || item.Risk || 'medium').toLowerCase();
           const riskColor =
-            item["Risk"].toLowerCase() === "very low" || item["Risk"].toLowerCase() === "low"
+            risk === "very low" || risk === "low"
               ? "bg-green-50 border-green-200 hover:bg-green-100"
-              : item["Risk"].toLowerCase() === "moderate"
+              : risk === "moderate" || risk === "medium"
               ? "bg-yellow-50 border-yellow-200 hover:bg-yellow-100"
               : "bg-red-50 border-red-200 hover:bg-red-100"
 
@@ -54,10 +61,10 @@ export default function ResultDisplay({ result, setResult }: ResultDisplayProps)
             >
               <div className="flex items-start justify-between mb-3">
                 <h3 className="text-lg font-bold text-gray-900">
-                  {item["Investment Option"]}
+                  {item.investment_option || item["Investment Option"] || "Unknown Investment"}
                 </h3>
-                <span className="text-xl" title={`Risk: ${item["Risk"]}`}>
-                  {getRiskIcon(item["Risk"])}
+                <span className="text-xl" title={`Risk: ${risk}`}>
+                  {getRiskIcon(risk)}
                 </span>
               </div>
               
@@ -68,12 +75,12 @@ export default function ResultDisplay({ result, setResult }: ResultDisplayProps)
                       Allocation
                     </span>
                     <span className="text-xs font-semibold text-gray-600">
-                      {item.Allocation}%
+                      {item.allocation || item.Allocation || '0%'}
                     </span>
                   </div>
                   <div className="overflow-hidden h-2 text-xs flex rounded bg-gray-200">
                     <div
-                      style={{ width: `${item.Allocation}%` }}
+                      style={{ width: `${(item.allocation || item.Allocation || '0').toString().replace('%', '')}%` }}
                       className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-500"
                     ></div>
                   </div>
@@ -82,11 +89,11 @@ export default function ResultDisplay({ result, setResult }: ResultDisplayProps)
                 <div className="space-y-1 text-sm">
                   <p className="text-gray-700 flex items-center gap-2">
                     <Wallet className="w-4 h-4" />
-                    <span className="font-medium">Liquidity:</span> {item["Liquidity"]}
+                    <span className="font-medium">Liquidity:</span> {item.liquidity || item["Liquidity"] || 'N/A'}
                   </p>
                   <p className="text-gray-700 flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4" />
-                    <span className="font-medium">Risk:</span> {item["Risk"]}
+                    <span className="font-medium">Risk:</span> {item.risk || item["Risk"] || 'N/A'}
                   </p>
                 </div>
               </div>

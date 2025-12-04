@@ -11,10 +11,13 @@ interface ContributorSectionProps {
 }
 
 export default function ContributorSection({ contributors }: ContributorSectionProps) {
+  const title = contributors.length === 1 ? "Developer" : "Our Contributors";
+  
   return (
     <div className="container mx-auto">
-      <h2 className="text-2xl font-bold text-gray-800 text-center mb-8">Our Contributors</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+      <h2 className="text-2xl font-bold text-gray-800 text-center mb-8">{title}</h2>
+      <div className="flex justify-center items-center">
+        <div className="grid grid-cols-1 gap-8">
         {contributors.map((contributor, idx) => (
           <div
             key={idx}
@@ -38,6 +41,7 @@ export default function ContributorSection({ contributors }: ContributorSectionP
             </a>
           </div>
         ))}
+        </div>
       </div>
     </div>
   )

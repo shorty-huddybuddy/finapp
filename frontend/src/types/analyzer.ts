@@ -1,6 +1,11 @@
 export interface ResultItem {
-  "Investment Option": string;
-  Allocation: number;
-  Liquidity: string;
-  Risk: string;
+  investment_option?: string;
+  allocation?: string;
+  liquidity?: string;
+  risk?: string;
+  // Legacy format support
+  "Investment Option"?: string;
+  Allocation?: number | string;
+  Liquidity?: string;
+  Risk?: string;
 }

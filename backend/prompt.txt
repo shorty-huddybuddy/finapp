@@ -11,8 +11,20 @@ Based on the user's profile above, provide a tailored investment recommendation.
 1. Suggest investment options suitable for the user's risk tolerance and liquidity requirements.
 2. Take into account the user's minimum freezing period and ensure recommendations align with their preferences.
 3. Include any market trends or insights that could impact the user's preferred stocks or investment strategy.
-4. Give only the table and nothing else.
-5. Give me the response in array of json such that each row respresent a json object .  
-6. Give only the investment options , allocation , liquidity and risk requirements . 
 
-Output the response in table format along with the respective allocation of fund  
+IMPORTANT OUTPUT FORMAT:
+Respond with ONLY a valid JSON array. Each element must be a JSON object with these exact fields:
+- "investment_option": string (name of the investment)
+- "allocation": string (percentage or amount)
+- "liquidity": string (high/medium/low)
+- "risk": string (high/medium/low)
+
+Example format:
+```json
+[
+  {"investment_option": "S&P 500 Index Fund", "allocation": "40%", "liquidity": "high", "risk": "medium"},
+  {"investment_option": "Government Bonds", "allocation": "30%", "liquidity": "high", "risk": "low"}
+]
+```
+
+Do not include any explanatory text before or after the JSON array. Return ONLY the JSON array.  
